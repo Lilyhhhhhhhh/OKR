@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function PUT(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -13,7 +13,7 @@ export async function PUT(
 
     const body = await request.json()
     const { current_value, note } = body
-    const keyResultId = context.params.id
+    const keyResultId = params.id
 
     // 获取当前关键结果信息
     const { data: keyResult, error: keyResultError } = await supabase
