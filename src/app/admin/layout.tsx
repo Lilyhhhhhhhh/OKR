@@ -35,7 +35,7 @@ export default function AdminLayout({
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div 
@@ -45,7 +45,7 @@ export default function AdminLayout({
       )}
 
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:flex-shrink-0 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="flex items-center justify-between p-6 border-b">
@@ -118,7 +118,7 @@ export default function AdminLayout({
       </div>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
         <div className="sticky top-0 z-40 bg-white shadow-sm border-b">
           <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 h-16">
@@ -128,7 +128,7 @@ export default function AdminLayout({
             >
               <Menu className="h-6 w-6 text-gray-600" />
             </button>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 lg:ml-0">
               <h1 className="text-lg font-semibold text-gray-900">
                 系统管理控制台
               </h1>
@@ -148,15 +148,21 @@ export default function AdminLayout({
                   3
                 </span>
               </button>
-              <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
-                <span className="text-purple-700 text-sm font-semibold">管</span>
-              </div>
+              <button 
+                className="flex items-center space-x-2 text-gray-700 hover:text-gray-900"
+                title="退出登录"
+              >
+                <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
+                  <span className="text-purple-700 text-sm font-semibold">管</span>
+                </div>
+                <span className="text-sm font-medium">退出</span>
+              </button>
             </div>
           </div>
         </div>
 
         {/* Page content */}
-        <main className="p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
           {children}
         </main>
       </div>

@@ -12,7 +12,8 @@ import {
   MessageSquare,
   MoreHorizontal,
   Award,
-  Clock
+  Clock,
+  Edit3
 } from 'lucide-react'
 
 interface Student {
@@ -34,7 +35,9 @@ interface Student {
 export default function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'excellent' | 'good' | 'at_risk' | 'behind'>('all')
-  const [students] = useState<Student[]>([
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null)
+  const [students, setStudents] = useState<Student[]>([
     {
       id: '1',
       name: '张小明',
@@ -150,6 +153,26 @@ export default function StudentsPage() {
     good: students.filter(s => s.status === 'good').length,
     at_risk: students.filter(s => s.status === 'at_risk').length,
     behind: students.filter(s => s.status === 'behind').length
+  }
+
+  const editStudent = (student: Student) => {
+    setEditingStudent(student)
+    setShowEditModal(true)
+  }
+
+  const saveStudent = () => {
+    if (!editingStudent) return
+    
+    setStudents(students.map(student => 
+      student.id === editingStudent.id ? editingStudent : student
+    ))
+    
+    // 保存到 localStorage
+    localStorage.setItem('teacherStudents', JSON.stringify(students))
+    
+    setShowEditModal(false)
+    setEditingStudent(null)
+    alert('学生信息已更新')
   }
 
   return (
@@ -328,13 +351,29 @@ export default function StudentsPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
-                      <button className="text-blue-600 hover:text-blue-900 p-1">
+                      <button 
+                        className="text-blue-600 hover:text-blue-900 p-1"
+                        title="查看详情"
+                      >
                         <Eye className="h-4 w-4" />
                       </button>
-                      <button className="text-green-600 hover:text-green-900 p-1">
+                      <button 
+                        onClick={() => editStudent(student)}
+                        className="text-orange-600 hover:text-orange-900 p-1"
+                        title="编辑学生"
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </button>
+                      <button 
+                        className="text-green-600 hover:text-green-900 p-1"
+                        title="发送消息"
+                      >
                         <MessageSquare className="h-4 w-4" />
                       </button>
-                      <button className="text-gray-400 hover:text-gray-600 p-1">
+                      <button 
+                        className="text-gray-400 hover:text-gray-600 p-1"
+                        title="更多操作"
+                      >
                         <MoreHorizontal className="h-4 w-4" />
                       </button>
                     </div>
@@ -354,6 +393,126 @@ export default function StudentsPage() {
           <p className="text-gray-600">
             {searchTerm ? '尝试使用不同的搜索条件' : '暂无学生数据'}
           </p>
+        </div>
+      )}
+
+      {/* Edit Student Modal */}
+      {showEditModal && editingStudent && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div 
+              className="fixed inset-0 transition-opacity" 
+              onClick={() => setShowEditModal(false)}
+            >
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-6 pt-6 pb-4">
+                <h3 className="text-lg font-medium text-gray-900 mb-6">编辑学生信息</h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      姓名
+                    </label>
+                    <input
+                      type="text"
+                      value={editingStudent.name}
+                      onChange={(e) => setEditingStudent({...editingStudent, name: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      学号
+                    </label>
+                    <input
+                      type="text"
+                      value={editingStudent.studentId}
+                      onChange={(e) => setEditingStudent({...editingStudent, studentId: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      邮箱
+                    </label>
+                    <input
+                      type="email"
+                      value={editingStudent.email}
+                      onChange={(e) => setEditingStudent({...editingStudent, email: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        专业
+                      </label>
+                      <input
+                        type="text"
+                        value={editingStudent.major}
+                        onChange={(e) => setEditingStudent({...editingStudent, major: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        年级
+                      </label>
+                      <select
+                        value={editingStudent.grade}
+                        onChange={(e) => setEditingStudent({...editingStudent, grade: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="大一">大一</option>
+                        <option value="大二">大二</option>
+                        <option value="大三">大三</option>
+                        <option value="大四">大四</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      学习状态
+                    </label>
+                    <select
+                      value={editingStudent.status}
+                      onChange={(e) => setEditingStudent({...editingStudent, status: e.target.value as any})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="excellent">优秀</option>
+                      <option value="good">良好</option>
+                      <option value="at_risk">需要关注</option>
+                      <option value="behind">严重滞后</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-gray-50 px-6 py-4 flex flex-col-reverse sm:flex-row sm:justify-end space-y-2 space-y-reverse sm:space-y-0 sm:space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  onClick={saveStudent}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  保存更改
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -260,19 +260,115 @@ export default function AlertsPage() {
       <div className="bg-white rounded-xl shadow-sm border">
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">预警列表</h2>
-          <p className="text-gray-600 text-sm">当前没有可显示的预警记录</p>
+          <p className="text-gray-600 text-sm">共 {filteredAlerts.length} 条预警信息</p>
         </div>
 
-        <div className="p-12 flex flex-col items-center justify-center text-center">
-          <div className="bg-gray-100 p-4 rounded-full mb-4">
-            <Bell className="h-12 w-12 text-gray-400" />
+        {filteredAlerts.length > 0 ? (
+          <div className="divide-y divide-gray-200">
+            {filteredAlerts.map((alert) => (
+              <div key={alert.id} className="p-6 hover:bg-gray-50">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start space-x-4">
+                    {/* Alert Type Icon */}
+                    <div className={`p-2 rounded-lg ${getSeverityColor(alert.severity)}`}>
+                      {getTypeIcon(alert.type)}
+                    </div>
+                    
+                    {/* Alert Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-3 mb-1">
+                        <h3 className="text-sm font-medium text-gray-900">{alert.title}</h3>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(alert.severity)}`}>
+                          {alert.severity === 'high' ? '高优先级' : 
+                           alert.severity === 'medium' ? '中优先级' : '低优先级'}
+                        </span>
+                        {alert.actionRequired && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                            需要行动
+                          </span>
+                        )}
+                      </div>
+                      
+                      <p className="text-sm text-gray-600 mb-2">{alert.description}</p>
+                      
+                      <div className="flex items-center space-x-4 text-xs text-gray-500">
+                        <span className="flex items-center space-x-1">
+                          <User className="h-3 w-3" />
+                          <span>{alert.studentName} ({alert.studentId})</span>
+                        </span>
+                        {alert.courseName && (
+                          <span className="flex items-center space-x-1">
+                            <Target className="h-3 w-3" />
+                            <span>{alert.courseName}</span>
+                          </span>
+                        )}
+                        <span className="flex items-center space-x-1">
+                          <Clock className="h-3 w-3" />
+                          <span>{alert.timestamp.toLocaleString()}</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions and Status */}
+                  <div className="flex items-center space-x-3">
+                    <div className={`flex items-center space-x-1 ${getStatusColor(alert.status)}`}>
+                      {getStatusIcon(alert.status)}
+                      <span className="text-xs font-medium">
+                        {alert.status === 'active' ? '待处理' :
+                         alert.status === 'resolved' ? '已解决' : '已忽略'}
+                      </span>
+                    </div>
+
+                    {alert.status === 'active' && (
+                      <div className="flex space-x-1">
+                        <button 
+                          onClick={() => updateAlertStatus(alert.id, 'resolved')}
+                          className="p-1 text-green-600 hover:text-green-800"
+                          title="标记为已解决"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => updateAlertStatus(alert.id, 'dismissed')}
+                          className="p-1 text-gray-600 hover:text-gray-800"
+                          title="忽略预警"
+                        >
+                          <XCircle className="h-4 w-4" />
+                        </button>
+                        <button 
+                          className="p-1 text-blue-600 hover:text-blue-800"
+                          title="查看详情"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button 
+                          className="p-1 text-purple-600 hover:text-purple-800"
+                          title="联系学生"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">暂无预警信息</h3>
-          <p className="text-gray-600 max-w-md">
-            当前没有需要处理的预警信息。预警功能正在升级中，稍后将提供更全面的学生学习状态监控。
-          </p>
-        </div>
-      </div>
+        ) : (
+          <div className="p-12 flex flex-col items-center justify-center text-center">
+            <div className="bg-gray-100 p-4 rounded-full mb-4">
+              <Bell className="h-12 w-12 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">暂无匹配的预警信息</h3>
+            <p className="text-gray-600 max-w-md">
+              {searchTerm || filterSeverity !== 'all' || filterStatus !== 'all' 
+                ? '当前筛选条件下没有找到预警信息，请尝试调整筛选条件。'
+                : '当前没有需要处理的预警信息。'
+              }
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )

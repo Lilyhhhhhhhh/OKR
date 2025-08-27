@@ -272,11 +272,24 @@ export default function ResourcesPage() {
 
               {/* Actions */}
               <div className="flex items-center justify-between">
-                <button className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium">
+                <a 
+                  href={resource.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                >
                   <ExternalLink className="h-4 w-4" />
                   <span>查看资源</span>
-                </button>
-                <button className="text-gray-500 hover:text-gray-700 p-1">
+                </a>
+                <button 
+                  onClick={() => {
+                    alert(`开始下载: ${resource.title}`);
+                    // 这里可以添加实际的下载逻辑
+                    window.open(resource.url, '_blank');
+                  }}
+                  className="text-gray-500 hover:text-gray-700 p-1 hover:bg-gray-100 rounded-full transition-colors"
+                  title="下载资源"
+                >
                   <Download className="h-4 w-4" />
                 </button>
               </div>

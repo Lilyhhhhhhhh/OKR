@@ -39,7 +39,10 @@ interface CourseOKR {
 }
 
 export default function CourseOKRPage() {
-  const [courseOKRs] = useState<CourseOKR[]>([
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingOKR, setEditingOKR] = useState<CourseOKR | null>(null)
+  const [courseOKRs, setCourseOKRs] = useState<CourseOKR[]>([
     {
       id: '1',
       courseId: 'CS001',
@@ -146,8 +149,6 @@ export default function CourseOKRPage() {
     }
   ])
 
-  const [showCreateModal, setShowCreateModal] = useState(false)
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'on_track': return 'bg-green-100 text-green-800'
@@ -171,6 +172,26 @@ export default function CourseOKRPage() {
     if (progress >= 60) return 'bg-blue-500'
     if (progress >= 40) return 'bg-yellow-500'
     return 'bg-red-500'
+  }
+
+  const editOKR = (okr: CourseOKR) => {
+    setEditingOKR(okr)
+    setShowEditModal(true)
+  }
+
+  const saveOKR = () => {
+    if (!editingOKR) return
+    
+    setCourseOKRs(courseOKRs.map(okr => 
+      okr.id === editingOKR.id ? editingOKR : okr
+    ))
+    
+    // 保存到localStorage
+    localStorage.setItem('courseOKRs', JSON.stringify(courseOKRs))
+    
+    setShowEditModal(false)
+    setEditingOKR(null)
+    alert('课程OKR已更新')
   }
 
   return (
@@ -281,19 +302,8 @@ export default function CourseOKRPage() {
                   </button>
                   <button 
                     className="p-2 hover:bg-gray-100 rounded-lg"
-                    onClick={() => {
-                      const newObjective = prompt('编辑课程目标', courseOKR.objective);
-                      if (newObjective) {
-                        // 更新本地存储
-                        const existingOKRs = JSON.parse(localStorage.getItem('courseOKRs') || '[]');
-                        const updatedOKRs = existingOKRs.map((okr: any) => 
-                          okr.id === courseOKR.id ? {...okr, objective: newObjective} : okr
-                        );
-                        localStorage.setItem('courseOKRs', JSON.stringify(updatedOKRs));
-                        // 刷新页面
-                        window.location.reload();
-                      }
-                    }}
+                    onClick={() => editOKR(courseOKR)}
+                    title="编辑课程OKR"
                   >
                     <Edit3 className="h-4 w-4 text-gray-600" />
                   </button>
@@ -465,6 +475,132 @@ export default function CourseOKRPage() {
                   className="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                 >
                   取消
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit OKR Modal */}
+      {showEditModal && editingOKR && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div 
+              className="fixed inset-0 transition-opacity" 
+              onClick={() => setShowEditModal(false)}
+            >
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+              <div className="bg-white px-6 pt-6 pb-4">
+                <h3 className="text-lg font-medium text-gray-900 mb-6">编辑课程OKR</h3>
+                
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      课程名称
+                    </label>
+                    <input
+                      type="text"
+                      value={editingOKR.courseName}
+                      onChange={(e) => setEditingOKR({...editingOKR, courseName: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      课程代码
+                    </label>
+                    <input
+                      type="text"
+                      value={editingOKR.courseId}
+                      onChange={(e) => setEditingOKR({...editingOKR, courseId: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      课程目标 (Objective)
+                    </label>
+                    <textarea
+                      value={editingOKR.objective}
+                      onChange={(e) => setEditingOKR({...editingOKR, objective: e.target.value})}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      课程描述
+                    </label>
+                    <textarea
+                      value={editingOKR.description}
+                      onChange={(e) => setEditingOKR({...editingOKR, description: e.target.value})}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 resize-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        学期
+                      </label>
+                      <input
+                        type="text"
+                        value={editingOKR.semester}
+                        onChange={(e) => setEditingOKR({...editingOKR, semester: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        注册学生数
+                      </label>
+                      <input
+                        type="number"
+                        value={editingOKR.enrolledStudents}
+                        onChange={(e) => setEditingOKR({...editingOKR, enrolledStudents: parseInt(e.target.value) || 0})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        状态
+                      </label>
+                      <select
+                        value={editingOKR.status}
+                        onChange={(e) => setEditingOKR({...editingOKR, status: e.target.value as any})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="on_track">进展良好</option>
+                        <option value="at_risk">需要关注</option>
+                        <option value="completed">已完成</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-gray-50 px-6 py-4 flex flex-col-reverse sm:flex-row sm:justify-end space-y-2 space-y-reverse sm:space-y-0 sm:space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  onClick={saveOKR}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  保存更改
                 </button>
               </div>
             </div>

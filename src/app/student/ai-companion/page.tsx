@@ -38,6 +38,32 @@ interface ChatHistory {
 }
 
 export default function AICompanion() {
+  // 安全的时间格式化函数
+  const formatTimestamp = (timestamp: any): string => {
+    if (!timestamp) return ''
+    
+    try {
+      let date: Date
+      if (timestamp instanceof Date) {
+        date = timestamp
+      } else if (typeof timestamp === 'string' || typeof timestamp === 'number') {
+        date = new Date(timestamp)
+      } else {
+        return new Date().toLocaleTimeString()
+      }
+      
+      // 检查日期是否有效
+      if (isNaN(date.getTime())) {
+        return new Date().toLocaleTimeString()
+      }
+      
+      return date.toLocaleTimeString()
+    } catch (e) {
+      console.warn('Failed to format timestamp:', timestamp, e)
+      return new Date().toLocaleTimeString()
+    }
+  }
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -124,8 +150,42 @@ export default function AICompanion() {
   }, [messages])
 
   const handleSendMessage = async (content: string) => {
-    // 功能已禁用，不执行任何操作
-    return
+    if (!content.trim()) return
+    
+    // 添加用户消息
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: content,
+      timestamp: new Date()
+    }
+    
+    const updatedMessages = [...messages, userMessage]
+    setMessages(updatedMessages)
+    setInputValue('')
+    setIsTyping(true)
+    
+    // 模拟AI思考时间
+    setTimeout(() => {
+      // 生成AI回复
+      const aiResponse = generateAIResponse(content)
+      const suggestions = generateSuggestions(content)
+      
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: aiResponse,
+        timestamp: new Date(),
+        suggestions: suggestions
+      }
+      
+      const finalMessages = [...updatedMessages, aiMessage]
+      setMessages(finalMessages)
+      setIsTyping(false)
+      
+      // 保存到历史记录
+      saveCurrentChatToHistory(finalMessages, content)
+    }, 1500)
   }
 
   const saveCurrentChatToHistory = (currentMessages: Message[], userQuestion: string) => {
@@ -149,7 +209,12 @@ export default function AICompanion() {
   const loadHistoryChat = (historyId: string) => {
     const history = chatHistory.find(h => h.id === historyId)
     if (history && history.messages.length > 0) {
-      setMessages(history.messages)
+      // 确保消息时间戳是正确的Date对象
+      const messagesWithCorrectTimestamp = history.messages.map(msg => ({
+        ...msg,
+        timestamp: msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp)
+      }))
+      setMessages(messagesWithCorrectTimestamp)
       setSelectedHistoryId(historyId)
     }
   }
@@ -174,7 +239,11 @@ export default function AICompanion() {
       try {
         const parsed = JSON.parse(savedHistory).map((h: any) => ({
           ...h,
-          timestamp: new Date(h.timestamp)
+          timestamp: new Date(h.timestamp),
+          messages: h.messages.map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }))
         }))
         setChatHistory(parsed)
       } catch (e) {
@@ -303,18 +372,19 @@ export default function AICompanion() {
               <div className={`text-xs mt-2 ${
                 message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
               }`}>
-                {message.timestamp.toLocaleTimeString()}
+                {formatTimestamp(message.timestamp)}
               </div>
               
               {message.suggestions && (
                 <div className="mt-3 space-y-1">
                   {message.suggestions.map((suggestion, index) => (
-                    <div
+                    <button
                       key={index}
-                      className="block w-full text-left px-3 py-1 text-sm bg-gray-100 border border-gray-200 rounded text-gray-500 cursor-not-allowed"
+                      onClick={() => handleSendMessage(suggestion)}
+                      className="block w-full text-left px-3 py-1 text-sm bg-white border border-gray-200 rounded text-gray-700 hover:bg-blue-50 hover:border-blue-200 transition-colors"
                     >
                       {suggestion}
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
@@ -340,19 +410,20 @@ export default function AICompanion() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick Actions - 已禁用 */}
+      {/* Quick Actions */}
       <div className="bg-gray-50 border-x border-b p-4">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
           {quickActions.map((action, index) => (
             <div
               key={index}
-              className="p-3 bg-gray-100 border border-gray-200 rounded-lg text-left cursor-not-allowed"
+              onClick={() => handleQuickAction(action.action)}
+              className="p-3 bg-white border border-gray-200 rounded-lg text-left cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition-colors"
             >
               <div className="flex items-center space-x-2 mb-1">
-                <div className="text-gray-400">
+                <div className="text-blue-500">
                   {action.icon}
                 </div>
-                <span className="font-medium text-sm text-gray-500">{action.title}</span>
+                <span className="font-medium text-sm text-gray-700">{action.title}</span>
               </div>
               <p className="text-xs text-gray-500">{action.description}</p>
             </div>
@@ -374,8 +445,9 @@ export default function AICompanion() {
             }}
           />
           <button
-            disabled
-            className="bg-gray-400 text-white px-6 py-3 rounded-lg flex items-center space-x-2 cursor-not-allowed"
+            onClick={() => handleSendMessage(inputValue)}
+            disabled={!inputValue.trim()}
+            className={`px-6 py-3 rounded-lg flex items-center space-x-2 ${!inputValue.trim() ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'} text-white`}
           >
             <Send className="h-4 w-4" />
             <span>发送</span>

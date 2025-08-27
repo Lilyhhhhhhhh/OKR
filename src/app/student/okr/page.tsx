@@ -43,6 +43,41 @@ export default function OKRManagement() {
   const [editingOKR, setEditingOKR] = useState<OKR | null>(null)
   const [showProgressModal, setShowProgressModal] = useState(false)
   const [updatingKR, setUpdatingKR] = useState<{okrId: string, krId: string} | null>(null)
+  
+  // 临时存储关键结果
+  const [tempKeyResults, setTempKeyResults] = useState<KeyResult[]>([])
+  const [newKeyResult, setNewKeyResult] = useState('')
+  
+  // 打开创建模态框
+  const openCreateModal = () => {
+    setTempKeyResults([]);
+    setNewKeyResult('');
+    setShowCreateModal(true);
+  };
+  
+  // 关闭创建模态框
+  const closeCreateModal = () => {
+    setTempKeyResults([]);
+    setNewKeyResult('');
+    setShowCreateModal(false);
+  };
+  
+  // 添加关键结果
+  const addKeyResult = () => {
+    if (newKeyResult.trim() === '') return
+    
+    const keyResult: KeyResult = {
+      id: Date.now().toString(),
+      title: newKeyResult,
+      progress: 0,
+      target: 100,
+      unit: '%',
+      completed: false
+    }
+    
+    setTempKeyResults([...tempKeyResults, keyResult])
+    setNewKeyResult('')
+  }
 
   const [okrs, setOKRs] = useState<OKR[]>([
     {
@@ -208,9 +243,9 @@ export default function OKRManagement() {
           <p className="text-gray-600 mt-1">设定、追踪和实现你的学习目标</p>
         </div>
         <button
-          className="flex items-center space-x-2 bg-gray-400 text-white px-4 py-2 rounded-lg cursor-not-allowed"
-          disabled
-          title="当前不支持创建新目标"
+          onClick={openCreateModal}
+          className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+          title="创建新目标"
         >
           <Plus className="h-5 w-5" />
           <span>创建新目标</span>
@@ -238,29 +273,50 @@ export default function OKRManagement() {
         </div>
       </div>
 
-      {/* Tabs - 静态显示，无交互功能 */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          {[
-            { key: 'current', label: '进行中', count: okrs.filter(o => o.status !== 'completed').length },
-            { key: 'completed', label: '已完成', count: okrs.filter(o => o.status === 'completed').length },
-            { key: 'all', label: '全部', count: okrs.length }
-          ].map((tab) => (
-            <div
-              key={tab.key}
-              className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                activeTab === tab.key
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500'
-              }`}
-            >
-              {tab.label}
-              <span className="ml-2 px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">
-                {tab.count}
-              </span>
+      {/* 状态统计 - 静态显示 */}
+      <div className="bg-white rounded-xl border shadow-sm p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">目标统计</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-blue-50 rounded-lg p-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-blue-600 text-sm font-medium">进行中</p>
+                <p className="text-2xl font-bold text-blue-700">
+                  {okrs.filter(o => o.status !== 'completed').length}
+                </p>
+              </div>
             </div>
-          ))}
-        </nav>
+          </div>
+          
+          <div className="bg-green-50 rounded-lg p-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-green-600 text-sm font-medium">已完成</p>
+                <p className="text-2xl font-bold text-green-700">
+                  {okrs.filter(o => o.status === 'completed').length}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                <Target className="h-5 w-5 text-gray-600" />
+              </div>
+              <div>
+                <p className="text-gray-600 text-sm font-medium">总计</p>
+                <p className="text-2xl font-bold text-gray-700">{okrs.length}</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* OKR List */}
@@ -383,11 +439,11 @@ export default function OKRManagement() {
               <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
             </div>
 
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">创建新的OKR目标</h3>
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+              <div className="bg-white px-6 pt-6 pb-4">
+                <h3 className="text-lg font-medium text-gray-900 mb-6">创建新的OKR目标</h3>
                 
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       目标 (Objective)
@@ -406,11 +462,11 @@ export default function OKRManagement() {
                     <textarea
                       placeholder="详细描述你的目标..."
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 resize-none"
                     ></textarea>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         时间周期
@@ -431,22 +487,103 @@ export default function OKRManagement() {
                       />
                     </div>
                   </div>
+
+                  {/* 关键结果区域 */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      关键结果（KRs）
+                    </label>
+                    
+                    {/* 已添加的关键结果列表 */}
+                    {tempKeyResults.length > 0 && (
+                      <div className="mb-4 space-y-2">
+                        {tempKeyResults.map((kr, index) => (
+                          <div key={kr.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
+                            <div className="flex-1">
+                              <span className="text-sm font-medium text-gray-900">{index + 1}. {kr.title}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setTempKeyResults(tempKeyResults.filter(item => item.id !== kr.id))}
+                              className="ml-2 text-red-500 hover:text-red-700 p-1"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* 添加关键结果输入框 */}
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        value={newKeyResult}
+                        onChange={(e) => setNewKeyResult(e.target.value)}
+                        placeholder="输入关键结果..."
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={addKeyResult}
+                        disabled={!newKeyResult.trim()}
+                        className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                      >
+                        添加
+                      </button>
+                    </div>
+                    {tempKeyResults.length === 0 && (
+                      <p className="mt-2 text-xs text-gray-500">请至少添加一个关键结果</p>
+                    )}
+                  </div>
                 </div>
               </div>
               
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+              <div className="bg-gray-50 px-6 py-4 flex flex-col-reverse sm:flex-row sm:justify-end space-y-2 space-y-reverse sm:space-y-0 sm:space-x-3">
                 <button
                   type="button"
-                  className="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={closeCreateModal}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  创建目标
+                  取消
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={() => {
+                    // 验证是否有关键结果
+                    if (tempKeyResults.length === 0) {
+                      alert('请至少添加一个关键结果！');
+                      return;
+                    }
+                    
+                    // 创建新的OKR
+                    const newOKR = {
+                      id: Date.now().toString(),
+                      objective: (document.querySelector('input[placeholder="例如：提升后端开发技能"]') as HTMLInputElement).value,
+                      description: (document.querySelector('textarea[placeholder="详细描述你的目标..."]') as HTMLTextAreaElement).value,
+                      period: (document.querySelector('select') as HTMLSelectElement).value,
+                      status: 'on_track',
+                      progress: 0,
+                      createdAt: new Date().toISOString(),
+                      dueDate: (document.querySelector('input[type="date"]') as HTMLInputElement).value,
+                      keyResults: tempKeyResults,
+                    };
+                    
+                    // 添加到OKR列表
+                    setOKRs([newOKR, ...okrs]);
+                    
+                    // 关闭模态框并重置状态
+                    closeCreateModal();
+                    
+                    // 显示成功消息
+                    alert('OKR创建成功！');
+                  }}
+                  disabled={tempKeyResults.length === 0}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
-                  取消
+                  创建目标
                 </button>
               </div>
             </div>
