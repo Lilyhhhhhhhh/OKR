@@ -1,0 +1,22 @@
+# 启明星OKR平台 - 依赖安装说明
+# 请在项目根目录运行以下命令：
+
+# 1. 安装基础依赖
+npm install
+
+# 2. 安装 Supabase 依赖 (已添加到 package.json)
+npm install @supabase/supabase-js uuid
+npm install @types/uuid --save-dev
+
+# 3. 配置环境变量
+# 复制 .env.example 为 .env.local 并填入你的 Supabase 信息
+
+# 4. 设置数据库
+# 在 Supabase SQL Editor 中运行 database-simple.sql
+
+# 5. 测试连接
+npm run dev
+# 访问 http://localhost:3001/api/test-supabase
+
+# 注意：使用 App Router 和 @supabase/supabase-js 直接连接
+# 无需额外的认证助手库

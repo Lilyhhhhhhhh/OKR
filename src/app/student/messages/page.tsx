@@ -8,7 +8,6 @@ import {
   CheckCircle, 
   Info,
   Trash2,
-  MarkAsRead,
   Filter,
   Search
 } from 'lucide-react'

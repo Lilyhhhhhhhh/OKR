@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Star, User, Lock, GraduationCap } from 'lucide-react'
+import { Star, User, Lock, GraduationCap, Mail, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function LoginPage() {
   const [userType, setUserType] = useState<'student' | 'teacher' | 'admin'>('student')
@@ -11,24 +12,33 @@ export default function LoginPage() {
     email: '',
     password: '',
   })
+  const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
   const router = useRouter()
+  const { signIn } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError('')
     
-    // 模拟登录
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // 根据用户类型重定向
-    const dashboardRoutes = {
-      student: '/student',
-      teacher: '/teacher',
-      admin: '/admin'
+    try {
+      await signIn(formData.email, formData.password)
+      
+      // 根据用户类型重定向 (目前主要支持学生端)
+      const dashboardRoutes = {
+        student: '/student',
+        teacher: '/teacher',
+        admin: '/admin'
+      }
+      
+      router.push(dashboardRoutes[userType])
+    } catch (error: any) {
+      setError(error.message || '登录失败，请检查邮箱和密码')
+    } finally {
+      setIsLoading(false)
     }
-    
-    router.push(dashboardRoutes[userType])
   }
 
   const userTypes = [
@@ -52,6 +62,12 @@ export default function LoginPage() {
         {/* Login Form */}
         <div className="glass-effect rounded-2xl p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                <p className="text-red-200 text-sm">{error}</p>
+              </div>
+            )}
             {/* User Type Selection */}
             <div>
               <label className="block text-sm font-medium text-white mb-3">
@@ -87,14 +103,17 @@ export default function LoginPage() {
               <label className="block text-sm font-medium text-white mb-2">
                 邮箱地址
               </label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-3 rounded-lg bg-white/10 border border-gray-600 text-white placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/20"
-                placeholder="请输入邮箱地址"
-                required
-              />
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/10 border border-gray-600 text-white placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/20"
+                  placeholder="请输入邮箱地址"
+                  required
+                />
+              </div>
             </div>
 
             {/* Password Input */}
@@ -102,14 +121,24 @@ export default function LoginPage() {
               <label className="block text-sm font-medium text-white mb-2">
                 密码
               </label>
-              <input
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full px-4 py-3 rounded-lg bg-white/10 border border-gray-600 text-white placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/20"
-                placeholder="请输入密码"
-                required
-              />
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full pl-10 pr-12 py-3 rounded-lg bg-white/10 border border-gray-600 text-white placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/20"
+                  placeholder="请输入密码"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
             </div>
 
             {/* Login Button */}
