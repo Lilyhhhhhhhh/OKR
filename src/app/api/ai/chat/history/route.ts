@@ -94,7 +94,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: '聊天会话不存在' }, { status: 404 })
     }
 
-    if (session.student_id !== user.id) {
+    if ((session as any).student_id !== user.id) {
       return NextResponse.json({ error: '无权限删除此会话' }, { status: 403 })
     }
 
