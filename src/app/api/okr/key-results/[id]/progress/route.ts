@@ -13,7 +13,9 @@ export async function PUT(
 
     const body = await request.json()
     const { current_value, note } = body
-    const keyResultId = params.id
+
+    const { id: keyResultId } = await params
+ Stashed changes
 
     // 获取当前关键结果信息
     const { data: keyResult, error: keyResultError } = await supabase

@@ -14,7 +14,8 @@ const nextConfig = {
     ],
   },
   experimental: {
-    serverComponentsExternalPackages: ['@supabase/supabase-js']
+    serverComponentsExternalPackages: ['@supabase/supabase-js'],
+    esmExternals: 'loose'
   },
 };
 
