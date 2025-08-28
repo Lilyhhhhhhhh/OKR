@@ -131,9 +131,22 @@
 import { supabase } from '@/lib/supabase'
 import { NextRequest, NextResponse } from 'next/server'
 
+<<<<<<< HEAD
 // 将主要逻辑提取到单独的函数中
 async function handlePUTRequest(request: NextRequest, keyResultId: string) {
   try {    
+=======
+type Params = Promise<{ id: string }>
+
+export async function PUT(
+  request: NextRequest,
+  props: { params: Params }
+) {
+  try {
+    const params = await props.params
+    const { id: keyResultId } = params
+    
+>>>>>>> 24c46f421edf7fd427ef06f56880da49a6caea8a
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: '未授权' }, { status: 401 })
@@ -202,8 +215,19 @@ async function handlePUTRequest(request: NextRequest, keyResultId: string) {
   }
 }
 
+<<<<<<< HEAD
 async function handleGETRequest(request: NextRequest, keyResultId: string) {
   try {    
+=======
+export async function GET(
+  request: NextRequest,
+  props: { params: Params }
+) {
+  try {
+    const params = await props.params
+    const { id: keyResultId } = params
+    
+>>>>>>> 24c46f421edf7fd427ef06f56880da49a6caea8a
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: '未授权' }, { status: 401 })
@@ -233,6 +257,7 @@ async function handleGETRequest(request: NextRequest, keyResultId: string) {
       { status: 500 }
     )
   }
+<<<<<<< HEAD
 }
 
 // 使用 RouteHandlerContext 类型
@@ -276,4 +301,6 @@ export const OPTIONS = async () => {
 
 export const HEAD = async () => {
   return NextResponse.json({ error: '方法不允许' }, { status: 405 });
+=======
+>>>>>>> 24c46f421edf7fd427ef06f56880da49a6caea8a
 }
