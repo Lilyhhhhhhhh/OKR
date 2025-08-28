@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useAuth } from '@/contexts/AuthContext'
 import { 
   Target, 
   Brain, 
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react'
 
 export default function StudentDashboard() {
+  const { user, student } = useAuth()
   const [currentOKRs] = useState([
     {
       id: 1,
@@ -89,7 +91,9 @@ export default function StudentDashboard() {
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
-        <h1 className="text-2xl font-bold mb-2">欢迎回来，张小明！</h1>
+        <h1 className="text-2xl font-bold mb-2">
+          欢迎回来，{student?.full_name || user?.email || '同学'}！
+        </h1>
         <p className="text-blue-100">让我们一起继续你的学习之旅，距离期末还有 45 天</p>
       </div>
 

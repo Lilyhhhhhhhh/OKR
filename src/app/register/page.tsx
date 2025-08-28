@@ -60,7 +60,8 @@ export default function RegisterPage() {
       }
 
       await signUp(formData.email, formData.password, profileData)
-      router.push('/student') // 注册成功后跳转到学生端
+      // 注册成功后跳转到登录页面
+      router.push('/login?message=注册成功，请登录')
     } catch (error: any) {
       setError(error.message || '注册失败，请重试')
     } finally {

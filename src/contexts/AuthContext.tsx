@@ -47,9 +47,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const studentData = await apiService.getStudentProfile()
       setStudent(studentData)
+      return studentData
     } catch (error) {
       console.error('加载学生信息失败:', error)
-      // 如果学生信息不存在，可能是新注册用户
+      // 如果学生信息不存在，可能是新注册用户或档案创建失败
+      setStudent(null)
+      return null
     }
   }
 
@@ -60,7 +63,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error
 
       setUser(data.user)
-      await loadStudentProfile()
+      const studentData = await loadStudentProfile()
+      
+      return { user: data.user, student: studentData }
     } catch (error) {
       console.error('登录失败:', error)
       throw error
@@ -77,11 +82,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
       if (error) throw error
 
-      if (data.user) {
+      if (data.user && data.session) {
+        // 暂时设置用户状态来创建学生档案
         setUser(data.user)
+        
+        // 等待一下确保认证状态建立
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
         // 创建学生档案
-        const studentData = await apiService.createStudentProfile(profileData)
-        setStudent(studentData)
+        try {
+          await apiService.createStudentProfile(profileData)
+          // 创建成功后立即登出，要求用户重新登录
+          await apiService.signOut()
+          setUser(null)
+          setStudent(null)
+        } catch (studentError: any) {
+          console.error('创建学生档案失败:', studentError)
+          
+          // 如果是用户档案已存在的错误，说明这个用户之前注册过
+          if (studentError.message?.includes('用户档案已存在')) {
+            // 档案已存在，直接登出要求重新登录
+            await apiService.signOut()
+            setUser(null)
+            setStudent(null)
+            return
+          }
+          
+          // 其他错误也要登出
+          await apiService.signOut()
+          setUser(null)
+          setStudent(null)
+          
+          if (studentError.message?.includes('学号已存在')) {
+            throw new Error('学号已存在，请使用不同的学号')
+          }
+          
+          throw new Error('用户注册成功，但学生档案创建失败。请重新登录或联系管理员。')
+        }
       }
     } catch (error) {
       console.error('注册失败:', error)
@@ -99,6 +136,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setUser(null)
       setStudent(null)
+      
+      // 跳转到登录页面
+      window.location.href = '/login'
     } catch (error) {
       console.error('退出登录失败:', error)
       throw error

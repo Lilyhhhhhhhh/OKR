@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
 import { 
   Star, 
   Target, 
@@ -22,11 +23,13 @@ export default function StudentLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
+  const { user, student, signOut } = useAuth()
 
   const navigation = [
     { name: '概览', href: '/student', icon: BarChart3 },
     { name: 'OKR管理', href: '/student/okr', icon: Target },
-    { name: 'AI学习伴侣', href: '/student/ai-companion', icon: Brain },
+    { name: '知识问答', href: '/student/knowledge', icon: Brain },
+    { name: 'AI学习伴侣', href: '/student/ai-companion', icon: MessageCircle },
     { name: '学习资源', href: '/student/resources', icon: BookOpen },
     { name: '设置', href: '/student/settings', icon: Settings },
   ]
@@ -87,14 +90,17 @@ export default function StudentLayout({
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
           <div className="flex items-center space-x-3">
             <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-              <span className="text-blue-700 font-semibold">小明</span>
+              <span className="text-blue-700 font-semibold">
+                {student?.full_name ? student.full_name.charAt(student.full_name.length - 1) : 
+                 user?.email ? user.email.charAt(0).toUpperCase() : '用'}
+              </span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">
-                张小明
+                {student?.full_name || user?.email || '用户'}
               </p>
               <p className="text-xs text-gray-500 truncate">
-                软件工程 · 大二
+                {student?.major && student?.grade ? `${student.major} · ${student.grade}` : '学生'}
               </p>
             </div>
           </div>
@@ -118,16 +124,18 @@ export default function StudentLayout({
               </h1>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600 hidden sm:block">欢迎，张小明</span>
+              <span className="text-sm text-gray-600 hidden sm:block">
+                欢迎，{student?.full_name || user?.email || '同学'}
+              </span>
               <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                <span className="text-blue-700 text-sm font-semibold">明</span>
+                <span className="text-blue-700 text-sm font-semibold">
+                  {student?.full_name ? student.full_name.charAt(student.full_name.length - 1) : 
+                   user?.email ? user.email.charAt(0).toUpperCase() : '用'}
+                </span>
               </div>
               <button 
                 className="text-gray-500 hover:text-gray-700 text-sm"
-                onClick={() => {
-                  localStorage.removeItem('user');
-                  window.location.href = '/login';
-                }}
+                onClick={() => signOut()}
               >
                 退出
               </button>

@@ -46,9 +46,19 @@ export class ApiService {
     return { user, error }
   }
 
+  // 获取认证头
+  private async getAuthHeaders() {
+    const { data: { session } } = await this.supabase.auth.getSession()
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
+    }
+  }
+
   // 学生信息相关
   async getStudentProfile() {
-    const response = await fetch('/api/students/profile')
+    const headers = await this.getAuthHeaders()
+    const response = await fetch('/api/students/profile', { headers })
     if (!response.ok) {
       throw new Error('获取学生信息失败')
     }
@@ -56,11 +66,10 @@ export class ApiService {
   }
 
   async updateStudentProfile(profileData: any) {
+    const headers = await this.getAuthHeaders()
     const response = await fetch('/api/students/profile', {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers,
       body: JSON.stringify(profileData)
     })
     if (!response.ok) {
@@ -70,11 +79,10 @@ export class ApiService {
   }
 
   async createStudentProfile(profileData: any) {
+    const headers = await this.getAuthHeaders()
     const response = await fetch('/api/students/profile', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers,
       body: JSON.stringify(profileData)
     })
     if (!response.ok) {
@@ -89,7 +97,8 @@ export class ApiService {
     if (filters?.status) params.append('status', filters.status)
     if (filters?.limit) params.append('limit', filters.limit.toString())
     
-    const response = await fetch(`/api/okr/objectives?${params.toString()}`)
+    const headers = await this.getAuthHeaders()
+    const response = await fetch(`/api/okr/objectives?${params.toString()}`, { headers })
     if (!response.ok) {
       throw new Error('获取目标失败')
     }
@@ -97,11 +106,10 @@ export class ApiService {
   }
 
   async createObjective(objectiveData: any) {
+    const headers = await this.getAuthHeaders()
     const response = await fetch('/api/okr/objectives', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers,
       body: JSON.stringify(objectiveData)
     })
     if (!response.ok) {
@@ -111,11 +119,10 @@ export class ApiService {
   }
 
   async updateKeyResultProgress(keyResultId: string, progressData: any) {
+    const headers = await this.getAuthHeaders()
     const response = await fetch(`/api/okr/key-results/${keyResultId}/progress`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers,
       body: JSON.stringify(progressData)
     })
     if (!response.ok) {
@@ -124,13 +131,24 @@ export class ApiService {
     return response.json()
   }
 
+  async deleteObjective(objectiveId: string) {
+    const headers = await this.getAuthHeaders()
+    const response = await fetch(`/api/okr/objectives/${objectiveId}`, {
+      method: 'DELETE',
+      headers
+    })
+    if (!response.ok) {
+      throw new Error('删除目标失败')
+    }
+    return response.json()
+  }
+
   // AI聊天相关
   async sendChatMessage(message: string, sessionId?: string, sessionType?: string) {
+    const headers = await this.getAuthHeaders()
     const response = await fetch('/api/ai/chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers,
       body: JSON.stringify({
         message,
         session_id: sessionId,
@@ -145,7 +163,8 @@ export class ApiService {
 
   async getChatHistory(sessionId?: string) {
     const params = sessionId ? `?session_id=${sessionId}` : ''
-    const response = await fetch(`/api/ai/chat/history${params}`)
+    const headers = await this.getAuthHeaders()
+    const response = await fetch(`/api/ai/chat/history${params}`, { headers })
     if (!response.ok) {
       throw new Error('获取聊天历史失败')
     }
@@ -153,15 +172,64 @@ export class ApiService {
   }
 
   async deleteChatSession(sessionId: string) {
+    const headers = await this.getAuthHeaders()
     const response = await fetch('/api/ai/chat/history', {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers,
       body: JSON.stringify({ session_id: sessionId })
     })
     if (!response.ok) {
       throw new Error('删除聊天会话失败')
+    }
+    return response.json()
+  }
+
+  // 知识库相关
+  async searchKnowledge(params?: { 
+    query?: string; 
+    category?: string; 
+    tags?: string; 
+    limit?: number 
+  }) {
+    const searchParams = new URLSearchParams()
+    if (params?.query) searchParams.append('q', params.query)
+    if (params?.category) searchParams.append('category', params.category)
+    if (params?.tags) searchParams.append('tags', params.tags)
+    if (params?.limit) searchParams.append('limit', params.limit.toString())
+    
+    const headers = await this.getAuthHeaders()
+    const response = await fetch(`/api/knowledge/search?${searchParams.toString()}`, { headers })
+    if (!response.ok) {
+      throw new Error('搜索知识库失败')
+    }
+    return response.json()
+  }
+
+  async sendKnowledgeQuestion(question: string, sessionId?: string) {
+    const headers = await this.getAuthHeaders()
+    const response = await fetch('/api/knowledge/chat', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        question,
+        session_id: sessionId
+      })
+    })
+    if (!response.ok) {
+      throw new Error('发送知识库问题失败')
+    }
+    return response.json()
+  }
+
+  async getKnowledgeChatHistory(sessionId?: string, limit?: number) {
+    const params = new URLSearchParams()
+    if (sessionId) params.append('session_id', sessionId)
+    if (limit) params.append('limit', limit.toString())
+    
+    const headers = await this.getAuthHeaders()
+    const response = await fetch(`/api/knowledge/chat?${params.toString()}`, { headers })
+    if (!response.ok) {
+      throw new Error('获取知识库聊天历史失败')
     }
     return response.json()
   }

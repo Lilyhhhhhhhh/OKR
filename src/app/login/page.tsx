@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Star, User, Lock, GraduationCap, Mail, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function LoginPage() {
@@ -15,8 +15,19 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { signIn } = useAuth()
+
+  useEffect(() => {
+    const message = searchParams.get('message')
+    if (message) {
+      setSuccessMessage(message)
+      // 5秒后清除成功消息
+      setTimeout(() => setSuccessMessage(''), 5000)
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -24,7 +35,14 @@ export default function LoginPage() {
     setError('')
     
     try {
-      await signIn(formData.email, formData.password)
+      const result = await signIn(formData.email, formData.password)
+      
+      // 检查是否需要完善学生档案
+      if (userType === 'student' && !result.student) {
+        // 如果是学生但没有学生档案，跳转到完善档案页面
+        router.push('/complete-profile')
+        return
+      }
       
       // 根据用户类型重定向 (目前主要支持学生端)
       const dashboardRoutes = {
@@ -62,6 +80,13 @@ export default function LoginPage() {
         {/* Login Form */}
         <div className="glass-effect rounded-2xl p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Success Message */}
+            {successMessage && (
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+                <p className="text-green-200 text-sm">{successMessage}</p>
+              </div>
+            )}
+
             {/* Error Message */}
             {error && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">

@@ -1,141 +1,6 @@
-// import { supabase } from '@/lib/supabase'
-// import { NextRequest, NextResponse } from 'next/server'
-
-// type Params = Promise<{ id: string }>
-
-// export async function PUT(
-//   request: NextRequest,
-//   props: { params: Params }
-// ) {
-//   try {
-//     const params = await props.params
-//     const { id: keyResultId } = params
-    
-//     const { data: { user }, error: authError } = await supabase.auth.getUser()
-//     if (authError || !user) {
-//       return NextResponse.json({ error: '未授权' }, { status: 401 })
-//     }
-
-//     const body = await request.json()
-//     const { current_value, note } = body
-
-//     // 获取当前关键结果信息
-//     const { data: keyResult, error: keyResultError } = await supabase
-//       .from('key_results')
-//       .select('*')
-//       .eq('id', keyResultId)
-//       .single()
-
-//     if (keyResultError || !keyResult) {
-//       return NextResponse.json({ error: '关键结果不存在' }, { status: 404 })
-//     }
-
-//     // 更新进度
-//     const { error: updateError } = await supabase
-//       .from('key_results')
-//       .update({
-//         current_value,
-//         updated_at: new Date().toISOString()
-//       })
-//       .eq('id', keyResultId)
-
-//     if (updateError) {
-//       return NextResponse.json({ error: '更新失败' }, { status: 500 })
-//     }
-
-//     // 记录进度更新历史
-//     if (note) {
-//       const { error: historyError } = await supabase
-//         .from('progress_history')
-//         .insert({
-//           key_result_id: keyResultId,
-//           user_id: user.id,
-//           previous_value: keyResult.current_value,
-//           new_value: current_value,
-//           note,
-//           created_at: new Date().toISOString()
-//         })
-
-//       if (historyError) {
-//         console.error('记录历史失败:', historyError)
-//       }
-//     }
-
-//     return NextResponse.json({ 
-//       success: true, 
-//       message: '进度更新成功',
-//       data: {
-//         current_value,
-//         note
-//       }
-//     })
-    
-//   } catch (error) {
-//     console.error('更新进度错误:', error)
-//     return NextResponse.json(
-//       { error: '内部服务器错误' }, 
-//       { status: 500 }
-//     )
-//   }
-// }
-
-// export async function GET(
-//   request: NextRequest,
-//   props: { params: Params }
-// ) {
-//   try {
-//     const params = await props.params
-//     const { id: keyResultId } = params
-    
-//     const { data: { user }, error: authError } = await supabase.auth.getUser()
-//     if (authError || !user) {
-//       return NextResponse.json({ error: '未授权' }, { status: 401 })
-//     }
-
-//     // 获取关键结果进度历史
-//     const { data: progressHistory, error } = await supabase
-//       .from('progress_history')
-//       .select('*')
-//       .eq('key_result_id', keyResultId)
-//       .order('created_at', { ascending: false })
-
-//     if (error) {
-//       console.error('获取进度历史失败:', error)
-//       return NextResponse.json({ error: '获取进度历史失败' }, { status: 500 })
-//     }
-
-//     return NextResponse.json({
-//       success: true,
-//       data: progressHistory
-//     })
-    
-//   } catch (error) {
-//     console.error('获取进度历史错误:', error)
-//     return NextResponse.json(
-//       { error: '内部服务器错误' }, 
-//       { status: 500 }
-//     )
-//   }
-// }
-
-
-
-
-
-
-
-
-
-
-
-import { supabase } from '@/lib/supabase'
 import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient, validateAuth } from '@/lib/supabase-server'
 
-<<<<<<< HEAD
-// 将主要逻辑提取到单独的函数中
-async function handlePUTRequest(request: NextRequest, keyResultId: string) {
-  try {    
-=======
 type Params = Promise<{ id: string }>
 
 export async function PUT(
@@ -146,15 +11,15 @@ export async function PUT(
     const params = await props.params
     const { id: keyResultId } = params
     
->>>>>>> 24c46f421edf7fd427ef06f56880da49a6caea8a
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { user, error: authError } = await validateAuth(request)
     if (authError || !user) {
-      return NextResponse.json({ error: '未授权' }, { status: 401 })
+      return NextResponse.json({ error: authError || '未授权' }, { status: 401 })
     }
 
     const body = await request.json()
     const { current_value, note } = body
 
+    const supabase = createServerClient(request)
     // 获取当前关键结果信息
     const { data: keyResult, error: keyResultError } = await supabase
       .from('key_results')
@@ -166,42 +31,51 @@ export async function PUT(
       return NextResponse.json({ error: '关键结果不存在' }, { status: 404 })
     }
 
+    // 计算进度百分比
+    const progressPercentage = keyResult.target_value 
+      ? (current_value / keyResult.target_value) * 100 
+      : 0
+
     // 更新进度
     const { error: updateError } = await supabase
       .from('key_results')
       .update({
         current_value,
+        progress: Math.min(progressPercentage, 100), // 确保进度不超过100%
         updated_at: new Date().toISOString()
       })
       .eq('id', keyResultId)
 
     if (updateError) {
+      console.error('更新关键结果失败:', updateError)
       return NextResponse.json({ error: '更新失败' }, { status: 500 })
     }
 
     // 记录进度更新历史
-    if (note) {
-      const { error: historyError } = await supabase
-        .from('progress_history')
-        .insert({
-          key_result_id: keyResultId,
-          user_id: user.id,
-          previous_value: keyResult.current_value,
-          new_value: current_value,
-          note,
-          created_at: new Date().toISOString()
-        })
+    const { error: historyError } = await supabase
+      .from('progress_logs')
+      .insert({
+        key_result_id: keyResultId,
+        previous_value: keyResult.current_value,
+        new_value: current_value,
+        progress_change: progressPercentage - (keyResult.progress || 0),
+        update_type: 'manual',
+        note: note || '手动更新进度'
+      })
 
-      if (historyError) {
-        console.error('记录历史失败:', historyError)
-      }
+    if (historyError) {
+      console.error('记录历史失败:', historyError)
     }
+
+    // 更新目标的整体进度
+    await updateObjectiveProgress(keyResult.objective_id, supabase)
 
     return NextResponse.json({ 
       success: true, 
       message: '进度更新成功',
       data: {
         current_value,
+        progress: Math.min(progressPercentage, 100),
         note
       }
     })
@@ -215,10 +89,6 @@ export async function PUT(
   }
 }
 
-<<<<<<< HEAD
-async function handleGETRequest(request: NextRequest, keyResultId: string) {
-  try {    
-=======
 export async function GET(
   request: NextRequest,
   props: { params: Params }
@@ -227,15 +97,15 @@ export async function GET(
     const params = await props.params
     const { id: keyResultId } = params
     
->>>>>>> 24c46f421edf7fd427ef06f56880da49a6caea8a
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { user, error: authError } = await validateAuth(request)
     if (authError || !user) {
-      return NextResponse.json({ error: '未授权' }, { status: 401 })
+      return NextResponse.json({ error: authError || '未授权' }, { status: 401 })
     }
 
+    const supabase = createServerClient(request)
     // 获取关键结果进度历史
     const { data: progressHistory, error } = await supabase
-      .from('progress_history')
+      .from('progress_logs')
       .select('*')
       .eq('key_result_id', keyResultId)
       .order('created_at', { ascending: false })
@@ -257,50 +127,39 @@ export async function GET(
       { status: 500 }
     )
   }
-<<<<<<< HEAD
 }
 
-// 使用 RouteHandlerContext 类型
-interface RouteHandlerContext {
-  params: Promise<{ id: string }>;
-}
+// 更新目标的整体进度
+async function updateObjectiveProgress(objectiveId: string, supabase: any) {
+  try {
+    // 获取目标下的所有关键结果
+    const { data: keyResults, error } = await supabase
+      .from('key_results')
+      .select('progress')
+      .eq('objective_id', objectiveId)
 
-// 分别导出每个 HTTP 方法，使用正确的类型
-export const PUT = async (
-  request: NextRequest,
-  context: RouteHandlerContext
-) => {
-  const params = await context.params;
-  return handlePUTRequest(request, params.id);
-}
+    if (error || !keyResults) {
+      console.error('获取关键结果失败:', error)
+      return
+    }
 
-export const GET = async (
-  request: NextRequest,
-  context: RouteHandlerContext
-) => {
-  const params = await context.params;
-  return handleGETRequest(request, params.id);
-}
+    // 计算平均进度
+    const totalProgress = keyResults.reduce((sum, kr) => sum + (kr.progress || 0), 0)
+    const averageProgress = keyResults.length > 0 ? totalProgress / keyResults.length : 0
 
-// 添加其他 HTTP 方法支持
-export const POST = async () => {
-  return NextResponse.json({ error: '方法不允许' }, { status: 405 });
-}
+    // 更新目标的进度
+    const { error: updateError } = await supabase
+      .from('objectives')
+      .update({ 
+        progress: Math.round(averageProgress),
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', objectiveId)
 
-export const DELETE = async () => {
-  return NextResponse.json({ error: '方法不允许' }, { status: 405 });
-}
-
-export const PATCH = async () => {
-  return NextResponse.json({ error: '方法不允许' }, { status: 405 });
-}
-
-export const OPTIONS = async () => {
-  return NextResponse.json({ error: '方法不允许' }, { status: 405 });
-}
-
-export const HEAD = async () => {
-  return NextResponse.json({ error: '方法不允许' }, { status: 405 });
-=======
->>>>>>> 24c46f421edf7fd427ef06f56880da49a6caea8a
+    if (updateError) {
+      console.error('更新目标进度失败:', updateError)
+    }
+  } catch (error) {
+    console.error('更新目标进度错误:', error)
+  }
 }
