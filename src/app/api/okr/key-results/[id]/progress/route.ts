@@ -1,25 +1,23 @@
-import { NextRequest } from 'next/server'
+import { supabase } from '@/lib/supabase'
+import { NextRequest, NextResponse } from 'next/server'
 
 type Params = Promise<{ id: string }>
 
 export async function PUT(
   request: NextRequest,
-<<<<<<< HEAD
-  { params }: { params: { id: string } }
-=======
   props: { params: Params }
->>>>>>> 696b303cabceedfe1ab3a2b6c99ae4536e103c23
 ) {
   try {
     const params = await props.params
-    const { id } = params
-    
-    // 获取请求体数据
-    const body = await request.json()
-<<<<<<< HEAD
-    const { current_value, note } = body
-
     const { id: keyResultId } = params
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: '未授权' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { current_value, note } = body
 
     // 获取当前关键结果信息
     const { data: keyResult, error: keyResultError } = await supabase
@@ -66,30 +64,16 @@ export async function PUT(
     return NextResponse.json({ 
       success: true, 
       message: '进度更新成功',
-=======
-    
-    // 这里添加你的业务逻辑
-    // 例如：更新 OKR key-result 的进度
-    
-    // 示例响应
-    return Response.json({
-      success: true,
-      message: `Key result ${id} progress updated`,
->>>>>>> 696b303cabceedfe1ab3a2b6c99ae4536e103c23
       data: {
-        id,
-        ...body
+        current_value,
+        note
       }
     })
     
   } catch (error) {
-    console.error('Error updating key result progress:', error)
-    
-    return Response.json(
-      { 
-        success: false, 
-        error: 'Failed to update key result progress' 
-      },
+    console.error('更新进度错误:', error)
+    return NextResponse.json(
+      { error: '内部服务器错误' }, 
       { status: 500 }
     )
   }
@@ -101,26 +85,34 @@ export async function GET(
 ) {
   try {
     const params = await props.params
-    const { id } = params
+    const { id: keyResultId } = params
     
-    // 获取进度数据的逻辑
-    
-    return Response.json({
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: '未授权' }, { status: 401 })
+    }
+
+    // 获取关键结果进度历史
+    const { data: progressHistory, error } = await supabase
+      .from('progress_history')
+      .select('*')
+      .eq('key_result_id', keyResultId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('获取进度历史失败:', error)
+      return NextResponse.json({ error: '获取进度历史失败' }, { status: 500 })
+    }
+
+    return NextResponse.json({
       success: true,
-      data: {
-        id,
-        // 你的数据
-      }
+      data: progressHistory
     })
     
   } catch (error) {
-    console.error('Error fetching key result progress:', error)
-    
-    return Response.json(
-      { 
-        success: false, 
-        error: 'Failed to fetch key result progress' 
-      },
+    console.error('获取进度历史错误:', error)
+    return NextResponse.json(
+      { error: '内部服务器错误' }, 
       { status: 500 }
     )
   }
