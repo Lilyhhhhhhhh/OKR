@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, validateAuth } from '@/lib/supabase-server'
 
 // 删除指定目标
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, context: any) {
   try {
-    const { id: objectiveId } = params
+    // 从URL中提取ID参数
+    const url = new URL(request.url)
+    const pathParts = url.pathname.split('/')
+    const objectiveId = pathParts[pathParts.length - 1] // 获取最后的[id]部分
     
     const { user, error: authError } = await validateAuth(request)
     if (authError || !user) {
@@ -48,12 +48,12 @@ export async function DELETE(
 }
 
 // 获取单个目标详情
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, context: any) {
   try {
-    const { id: objectiveId } = params
+    // 从URL中提取ID参数
+    const url = new URL(request.url)
+    const pathParts = url.pathname.split('/')
+    const objectiveId = pathParts[pathParts.length - 1] // 获取最后的[id]部分
     
     const { user, error: authError } = await validateAuth(request)
     if (authError || !user) {
