@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, validateAuth } from '@/lib/supabase-server'
 
 // 删除指定目标
-export async function DELETE(request: NextRequest, props: any) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const params = await props.params
     const { id: objectiveId } = params
     
     const { user, error: authError } = await validateAuth(request)
@@ -46,9 +48,11 @@ export async function DELETE(request: NextRequest, props: any) {
 }
 
 // 获取单个目标详情
-export async function GET(request: NextRequest, props: any) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const params = await props.params
     const { id: objectiveId } = params
     
     const { user, error: authError } = await validateAuth(request)
