@@ -1,6 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import { apiService } from '@/lib/api'
+import { supabase } from '@/lib/supabase'
 import { 
   User, 
   Mail, 
@@ -16,17 +19,20 @@ import {
 } from 'lucide-react'
 
 export default function SettingsPage() {
+  const { user, student } = useAuth()
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications' | 'preferences'>('profile')
   const [isEditing, setIsEditing] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   
   const [profileData, setProfileData] = useState({
-    name: '张小明',
-    email: 'xiaoming.zhang@student.hebnu.edu.cn',
-    studentId: '2022001234',
-    major: '软件工程',
-    grade: '大二',
-    phone: '138****8888',
-    bio: '热爱编程，致力于成为全栈开发工程师'
+    name: '',
+    email: '',
+    studentId: '',
+    major: '',
+    grade: '',
+    phone: '',
+    bio: ''
   })
 
   const [securitySettings, setSecuritySettings] = useState({
@@ -53,13 +59,57 @@ export default function SettingsPage() {
     dataPrivacy: 'friends'
   })
 
-  const handleProfileSave = () => {
-    // 模拟保存操作
-    setIsEditing(false)
-    alert('个人信息已更新！')
+  useEffect(() => {
+    const loadUserData = () => {
+      if (user && student) {
+        setProfileData({
+          name: student.full_name || '',
+          email: user.email || '',
+          studentId: student.student_id || '',
+          major: student.major || '',
+          grade: student.grade || '',
+          phone: student.phone || '',
+          bio: student.bio || ''
+        })
+        setLoading(false)
+      }
+    }
+    
+    loadUserData()
+  }, [user, student])
+
+  const handleProfileSave = async () => {
+    if (!user || !student) return
+    
+    setSaving(true)
+    try {
+      // 更新学生档案
+      const updateData = {
+        full_name: profileData.name,
+        student_id: profileData.studentId,
+        major: profileData.major,
+        grade: profileData.grade,
+        phone: profileData.phone,
+        bio: profileData.bio
+      }
+      
+      await apiService.updateStudentProfile(updateData)
+      
+      setIsEditing(false)
+      alert('个人信息已更新！')
+    } catch (error) {
+      console.error('更新失败:', error)
+      alert('更新失败，请稍后重试')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
+    if (!securitySettings.currentPassword) {
+      alert('请输入当前密码')
+      return
+    }
     if (securitySettings.newPassword !== securitySettings.confirmPassword) {
       alert('两次输入的密码不一致')
       return
@@ -68,14 +118,46 @@ export default function SettingsPage() {
       alert('密码至少需要6个字符')
       return
     }
-    // 模拟密码更改
-    setSecuritySettings({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-      twoFactorEnabled: securitySettings.twoFactorEnabled
-    })
-    alert('密码已更新！')
+    
+    setSaving(true)
+    try {
+      // 先验证当前密码
+      if (user?.email) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: user.email,
+          password: securitySettings.currentPassword
+        })
+        
+        if (signInError) {
+          alert('当前密码不正确')
+          setSaving(false)
+          return
+        }
+      }
+      
+      // 使用Supabase客户端直接更新密码
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: securitySettings.newPassword
+      })
+      
+      if (updateError) {
+        console.error('密码更新失败:', updateError)
+        alert(`密码更新失败: ${updateError.message}`)
+      } else {
+        setSecuritySettings({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+          twoFactorEnabled: securitySettings.twoFactorEnabled
+        })
+        alert('密码已更新！')
+      }
+    } catch (error) {
+      console.error('密码更新失败:', error)
+      alert('密码更新失败，请稍后重试')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const tabs = [
@@ -84,6 +166,17 @@ export default function SettingsPage() {
     { id: 'notifications', label: '通知设置', icon: Bell },
     { id: 'preferences', label: '偏好设置', icon: Globe }
   ]
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="bg-white rounded-xl p-6 shadow-sm border animate-pulse">
+          <div className="h-8 bg-gray-200 rounded mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -139,7 +232,9 @@ export default function SettingsPage() {
                 <div className="flex items-center space-x-4">
                   <div className="relative">
                     <div className="h-20 w-20 rounded-full bg-blue-100 flex items-center justify-center">
-                      <span className="text-2xl font-semibold text-blue-700">明</span>
+                      <span className="text-2xl font-semibold text-blue-700">
+                        {profileData.name ? profileData.name.charAt(0) : 'U'}
+                      </span>
                     </div>
                     {isEditing && (
                       <button className="absolute -bottom-1 -right-1 p-1 bg-white border border-gray-300 rounded-full shadow-sm hover:bg-gray-50">
@@ -171,8 +266,9 @@ export default function SettingsPage() {
                     <input
                       type="text"
                       value={profileData.studentId}
-                      disabled
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                      onChange={(e) => setProfileData({...profileData, studentId: e.target.value})}
+                      disabled={!isEditing}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50"
                     />
                   </div>
 
@@ -181,9 +277,8 @@ export default function SettingsPage() {
                     <input
                       type="email"
                       value={profileData.email}
-                      onChange={(e) => setProfileData({...profileData, email: e.target.value})}
-                      disabled={!isEditing}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50"
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
                     />
                   </div>
 
@@ -203,8 +298,9 @@ export default function SettingsPage() {
                     <input
                       type="text"
                       value={profileData.major}
-                      disabled
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                      onChange={(e) => setProfileData({...profileData, major: e.target.value})}
+                      disabled={!isEditing}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50"
                     />
                   </div>
 
@@ -213,8 +309,9 @@ export default function SettingsPage() {
                     <input
                       type="text"
                       value={profileData.grade}
-                      disabled
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                      onChange={(e) => setProfileData({...profileData, grade: e.target.value})}
+                      disabled={!isEditing}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50"
                     />
                   </div>
                 </div>
@@ -240,10 +337,15 @@ export default function SettingsPage() {
                     </button>
                     <button
                       onClick={handleProfileSave}
-                      className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      disabled={saving}
+                      className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400"
                     >
-                      <Save className="h-4 w-4" />
-                      <span>保存更改</span>
+                      {saving ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      ) : (
+                        <Save className="h-4 w-4" />
+                      )}
+                      <span>{saving ? '保存中...' : '保存更改'}</span>
                     </button>
                   </div>
                 )}
@@ -295,9 +397,10 @@ export default function SettingsPage() {
 
                     <button
                       onClick={handlePasswordChange}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      disabled={saving}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400"
                     >
-                      更新密码
+                      {saving ? '更新中...' : '更新密码'}
                     </button>
                   </div>
                 </div>

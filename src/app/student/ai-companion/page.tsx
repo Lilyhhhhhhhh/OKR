@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import { apiService } from '@/lib/api'
 import { 
   Send, 
   Brain, 
@@ -11,7 +13,13 @@ import {
   Calendar,
   MessageSquare,
   Sparkles,
-  AlertCircle
+  AlertCircle,
+  Search,
+  Plus,
+  History,
+  Clock,
+  Tag,
+  Loader2
 } from 'lucide-react'
 
 interface Message {
@@ -20,6 +28,9 @@ interface Message {
   content: string
   timestamp: Date
   suggestions?: string[]
+  confidence_score?: number
+  processing_time?: number
+  related_knowledge_ids?: string[]
 }
 
 interface QuickAction {
@@ -37,7 +48,44 @@ interface ChatHistory {
   messages: Message[]
 }
 
+interface KnowledgeItem {
+  id: string
+  title: string
+  content: string
+  tags: string[]
+  category: string
+  author: string
+  created_at: string
+}
+
+interface Session {
+  id: string
+  title: string
+  created_at: string
+  updated_at: string
+}
+
 export default function AICompanion() {
+  const { user } = useAuth()
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      type: 'ai',
+      content: '你好！我是你的AI学习伴侣。我可以帮助你制定学习计划、回答学习问题、推荐学习资源，还能从知识库中为你找到相关资料。有什么可以帮助你的吗？',
+      timestamp: new Date(),
+      suggestions: ['制定学习计划', '搜索知识库', '分析学习进度', '推荐学习资源']
+    }
+  ])
+  
+  const [inputValue, setInputValue] = useState('')
+  const [isTyping, setIsTyping] = useState(false)
+  const [showSidebar, setShowSidebar] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [knowledgeItems, setKnowledgeItems] = useState<KnowledgeItem[]>([])
+  const [sessions, setSessions] = useState<Session[]>([])
+  const [currentSession, setCurrentSession] = useState<string | null>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
   // 安全的时间格式化函数
   const formatTimestamp = (timestamp: any): string => {
     if (!timestamp) return ''
@@ -52,7 +100,6 @@ export default function AICompanion() {
         return new Date().toLocaleTimeString()
       }
       
-      // 检查日期是否有效
       if (isNaN(date.getTime())) {
         return new Date().toLocaleTimeString()
       }
@@ -63,56 +110,6 @@ export default function AICompanion() {
       return new Date().toLocaleTimeString()
     }
   }
-
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      type: 'ai',
-      content: '你好，张小明！我是你的AI学习伴侣。我注意到你在"算法与数据结构强化"目标上进度有点滞后，需要我帮你制定一个加速计划吗？',
-      timestamp: new Date(),
-      suggestions: ['制定学习计划', '推荐学习资源', '分析学习障碍']
-    }
-  ])
-  const [inputValue, setInputValue] = useState('')
-  const [isTyping, setIsTyping] = useState(false)
-  const [chatHistory, setChatHistory] = useState<ChatHistory[]>([
-    {
-      id: '1',
-      title: '学习计划制定',
-      preview: '帮助制定React学习路径和时间安排',
-      timestamp: new Date(Date.now() - 86400000),
-      messages: [
-        {
-          id: 'h1',
-          type: 'user',
-          content: '我想学习React，但不知道从哪里开始',
-          timestamp: new Date(Date.now() - 86400000)
-        },
-        {
-          id: 'h2',
-          type: 'ai',
-          content: '建议你从JavaScript基础开始，然后学习React基础概念...',
-          timestamp: new Date(Date.now() - 86400000)
-        }
-      ]
-    },
-    {
-      id: '2',
-      title: 'TypeScript疑问解答',
-      preview: '关于TypeScript泛型的使用方法',
-      timestamp: new Date(Date.now() - 172800000),
-      messages: []
-    },
-    {
-      id: '3',
-      title: '算法学习建议',
-      preview: '数据结构学习顺序和重点难点分析',
-      timestamp: new Date(Date.now() - 259200000),
-      messages: []
-    }
-  ])
-  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const quickActions: QuickAction[] = [
     {
@@ -128,10 +125,10 @@ export default function AICompanion() {
       action: '请推荐一些适合我的学习资源'
     },
     {
-      icon: <AlertCircle className="h-5 w-5" />,
-      title: '学习诊断',
-      description: '分析我的学习障碍',
-      action: '我在学习中遇到了一些困难，请帮我分析一下'
+      icon: <Brain className="h-5 w-5" />,
+      title: '知识问答',
+      description: '搜索知识库并解答问题',
+      action: '我有一个技术问题，请从知识库中帮我找找相关资料'
     },
     {
       icon: <TrendingUp className="h-5 w-5" />,
@@ -149,10 +146,42 @@ export default function AICompanion() {
     scrollToBottom()
   }, [messages])
 
-  const handleSendMessage = async (content: string) => {
-    if (!content.trim()) return
+  // 搜索知识库
+  const searchKnowledge = async (query: string) => {
+    if (!query.trim()) {
+      setKnowledgeItems([])
+      return
+    }
     
-    // 添加用户消息
+    try {
+      const result = await apiService.searchKnowledge({ 
+        query, 
+        limit: 10 
+      })
+      if (result.success) {
+        setKnowledgeItems(result.data || [])
+      }
+    } catch (error) {
+      console.error('搜索知识库失败:', error)
+    }
+  }
+
+  // 加载会话列表
+  const loadSessions = async () => {
+    try {
+      const result = await apiService.getKnowledgeChatHistory()
+      if (result.success) {
+        setSessions(result.sessions || [])
+      }
+    } catch (error) {
+      console.error('加载会话列表失败:', error)
+    }
+  }
+
+  // 发送消息（集成知识库功能）
+  const handleSendMessage = async (content: string) => {
+    if (!content.trim() || isTyping) return
+    
     const userMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
@@ -160,301 +189,415 @@ export default function AICompanion() {
       timestamp: new Date()
     }
     
-    const updatedMessages = [...messages, userMessage]
-    setMessages(updatedMessages)
+    setMessages(prev => [...prev, userMessage])
     setInputValue('')
     setIsTyping(true)
-    
-    // 模拟AI思考时间
-    setTimeout(() => {
-      // 生成AI回复
-      const aiResponse = generateAIResponse(content)
-      const suggestions = generateSuggestions(content)
+
+    try {
+      // 使用知识库API发送消息
+      const result = await apiService.sendKnowledgeQuestion(content, currentSession)
       
-      const aiMessage: Message = {
+      if (result.success) {
+        // 更新当前会话ID
+        if (!currentSession) {
+          setCurrentSession(result.session_id)
+        }
+
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'ai',
+          content: result.answer || '抱歉，我无法回答这个问题。',
+          timestamp: new Date(),
+          confidence_score: result.confidence,
+          processing_time: result.processing_time,
+          related_knowledge_ids: result.related_knowledge_ids || []
+        }
+
+        setMessages(prev => [...prev, aiMessage])
+        
+        // 更新会话列表
+        await loadSessions()
+      } else {
+        // 处理错误情况
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'ai',
+          content: result.answer || '抱歉，出现了错误，请稍后重试。',
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev, errorMessage])
+      }
+    } catch (error) {
+      console.error('发送消息失败:', error)
+      const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: aiResponse,
-        timestamp: new Date(),
-        suggestions: suggestions
+        content: '抱歉，网络错误，请稍后重试。',
+        timestamp: new Date()
       }
-      
-      const finalMessages = [...updatedMessages, aiMessage]
-      setMessages(finalMessages)
+      setMessages(prev => [...prev, errorMessage])
+    } finally {
       setIsTyping(false)
-      
-      // 保存到历史记录
-      saveCurrentChatToHistory(finalMessages, content)
-    }, 1500)
-  }
-
-  const saveCurrentChatToHistory = (currentMessages: Message[], userQuestion: string) => {
-    if (currentMessages.length >= 4) { // 至少有2轮对话才保存
-      const newHistory: ChatHistory = {
-        id: Date.now().toString(),
-        title: userQuestion.length > 20 ? userQuestion.substring(0, 20) + '...' : userQuestion,
-        preview: currentMessages[currentMessages.length - 1].content.substring(0, 50) + '...',
-        timestamp: new Date(),
-        messages: [...currentMessages]
-      }
-      
-      setChatHistory(prev => [newHistory, ...prev].slice(0, 10)) // 只保留最近10条
-      
-      // 保存到localStorage
-      const updatedHistory = [newHistory, ...chatHistory].slice(0, 10)
-      localStorage.setItem('aiChatHistory', JSON.stringify(updatedHistory))
     }
   }
 
-  const loadHistoryChat = (historyId: string) => {
-    const history = chatHistory.find(h => h.id === historyId)
-    if (history && history.messages.length > 0) {
-      // 确保消息时间戳是正确的Date对象
-      const messagesWithCorrectTimestamp = history.messages.map(msg => ({
-        ...msg,
-        timestamp: msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp)
-      }))
-      setMessages(messagesWithCorrectTimestamp)
-      setSelectedHistoryId(historyId)
-    }
-  }
-
+  // 开始新对话
   const startNewChat = () => {
+    setCurrentSession(null)
     setMessages([
       {
         id: Date.now().toString(),
         type: 'ai',
-        content: '你好！我是你的AI学习伴侣，有什么可以帮助你的吗？',
+        content: '你好！我是你的AI学习伴侣。我可以帮助你制定学习计划、回答学习问题、推荐学习资源，还能从知识库中为你找到相关资料。有什么可以帮助你的吗？',
         timestamp: new Date(),
-        suggestions: ['制定学习计划', '推荐学习资源', '分析学习障碍']
+        suggestions: ['制定学习计划', '搜索知识库', '分析学习进度', '推荐学习资源']
       }
     ])
-    setSelectedHistoryId(null)
   }
 
-  // 初始化时加载历史记录
-  useEffect(() => {
-    const savedHistory = localStorage.getItem('aiChatHistory')
-    if (savedHistory) {
-      try {
-        const parsed = JSON.parse(savedHistory).map((h: any) => ({
-          ...h,
-          timestamp: new Date(h.timestamp),
-          messages: h.messages.map((msg: any) => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp)
-          }))
+  // 选择会话
+  const selectSession = async (sessionId: string) => {
+    try {
+      const result = await apiService.getKnowledgeChatHistory(sessionId)
+      if (result.success && result.messages) {
+        const convertedMessages: Message[] = result.messages.map((msg: any) => ({
+          id: msg.id,
+          type: msg.sender_type === 'user' ? 'user' : 'ai',
+          content: msg.content,
+          timestamp: new Date(msg.created_at),
+          confidence_score: msg.confidence_score,
+          processing_time: msg.processing_time,
+          related_knowledge_ids: msg.related_knowledge_ids
         }))
-        setChatHistory(parsed)
-      } catch (e) {
-        console.error('Failed to load chat history:', e)
+        setMessages(convertedMessages)
+        setCurrentSession(sessionId)
+        setShowSidebar(false)
       }
+    } catch (error) {
+      console.error('加载会话失败:', error)
     }
-  }, [])
-
-  const generateAIResponse = (userInput: string): string => {
-    if (userInput.includes('目标') || userInput.includes('OKR')) {
-      return '基于你的学习情况，我建议你设定一个渐进式的目标。比如可以先从每天刷2道算法题开始，逐步增加到5道。同时建议你：\n\n1. 每周选择一个数据结构主题深入学习\n2. 记录解题思路和总结\n3. 参加线上算法讨论'
-    } else if (userInput.includes('资源') || userInput.includes('推荐')) {
-      return '根据你的学习进度，我为你推荐以下资源：\n\n📚 **书籍推荐**\n- 《算法导论》- 系统性学习\n- 《剑指Offer》- 面试导向\n\n🎥 **视频课程**\n- B站Up主"程序员Carl"的算法专题\n- LeetCode官方题解视频\n\n💻 **练习平台**\n- LeetCode中国站\n- 牛客网算法专项'
-    } else if (userInput.includes('困难') || userInput.includes('障碍')) {
-      return '我分析了你的学习数据，发现主要障碍可能在于：\n\n🎯 **时间管理**\n- 你的学习时间较为分散，建议固定每天下午2-4点为算法专项时间\n\n🧠 **理解深度**\n- 建议采用费曼学习法，尝试向他人解释算法思路\n\n💪 **坚持性**\n- 可以加入学习小组，互相监督和讨论'
-    } else if (userInput.includes('进展') || userInput.includes('进度')) {
-      return '让我来分析你最近的学习进展：\n\n📊 **数据概览**\n- 本周学习时长：12.5小时（目标15小时）\n- 完成题目：8道（目标10道）\n- 知识点掌握：数组85%，链表70%\n\n💡 **改进建议**\n- 链表部分需要加强练习\n- 可以尝试更多中等难度题目\n- 建议整理错题本'
-    }
-    return '我理解你的需求，基于你的学习情况，我建议我们可以从以下几个方面来优化你的学习计划...'
-  }
-
-  const generateSuggestions = (userInput: string): string[] => {
-    const baseSuggestions = ['详细解释', '制定具体计划', '推荐更多资源']
-    if (userInput.includes('目标')) {
-      return ['制定详细时间表', '设定里程碑', '选择评估指标']
-    } else if (userInput.includes('资源')) {
-      return ['分类别推荐', '难度等级分析', '制定学习路径']
-    }
-    return baseSuggestions
   }
 
   const handleQuickAction = (action: string) => {
     handleSendMessage(action)
   }
 
-  return (
-    <div className="max-w-7xl mx-auto h-[calc(100vh-10rem)] flex gap-6">
-      {/* History Sidebar */}
-      <div className="w-80 flex flex-col">
-        <div className="bg-white rounded-xl border shadow-sm flex-1 flex flex-col">
-          {/* Sidebar Header */}
-          <div className="p-4 border-b">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-gray-900">对话历史</h2>
-              <button
-                onClick={startNewChat}
-                className="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
-              >
-                新对话
-              </button>
-            </div>
-          </div>
+  // 初始化
+  useEffect(() => {
+    if (user) {
+      loadSessions()
+    }
+  }, [user])
 
-          {/* History List */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            {chatHistory.map((history) => (
-              <button
-                key={history.id}
-                onClick={() => loadHistoryChat(history.id)}
-                className={`w-full text-left p-3 rounded-lg transition-colors ${
-                  selectedHistoryId === history.id
-                    ? 'bg-blue-50 border border-blue-200'
-                    : 'hover:bg-gray-50 border border-transparent'
-                }`}
-              >
-                <h3 className="font-medium text-gray-900 text-sm truncate">
-                  {history.title}
-                </h3>
-                <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                  {history.preview}
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  {history.timestamp.toLocaleDateString()}
-                </p>
-              </button>
-            ))}
-            
-            {chatHistory.length === 0 && (
-              <div className="text-center text-gray-500 text-sm py-8">
-                <Brain className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                <p>暂无对话历史</p>
-                <p>开始你的第一次对话吧！</p>
+  // 搜索知识库
+  useEffect(() => {
+    const searchTimeout = setTimeout(() => {
+      if (searchQuery) {
+        searchKnowledge(searchQuery)
+      } else {
+        setKnowledgeItems([])
+      }
+    }, 300)
+
+    return () => clearTimeout(searchTimeout)
+  }, [searchQuery])
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">请先登录</h2>
+          <p className="text-gray-600">您需要登录才能使用AI学习伴侣功能。</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex h-full max-h-[calc(100vh-120px)] bg-gray-50 rounded-xl overflow-hidden">
+      {/* 侧边栏 */}
+      <div className={`${showSidebar ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:relative z-30 w-80 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300`}>
+        {/* 侧边栏头部 */}
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+              <Brain className="h-5 w-5 mr-2 text-purple-600" />
+              AI学习伴侣
+            </h2>
+            <button
+              onClick={startNewChat}
+              className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+              title="新建对话"
+            >
+              <Plus className="h-5 w-5" />
+            </button>
+          </div>
+          
+          {/* 知识库搜索 */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="搜索知识库..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+
+        {/* 内容区域 */}
+        <div className="flex-1 overflow-y-auto">
+          {/* 知识库搜索结果 */}
+          {knowledgeItems.length > 0 && (
+            <div className="p-4 border-b border-gray-100">
+              <h3 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                <BookOpen className="h-4 w-4 mr-1" />
+                知识库
+              </h3>
+              <div className="space-y-2">
+                {knowledgeItems.slice(0, 5).map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-2 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
+                    onClick={() => setInputValue(`请介绍一下"${item.title}"`)}
+                  >
+                    <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
+                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.content}</p>
+                    {item.tags && item.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {item.tags.slice(0, 3).map((tag, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs bg-purple-100 text-purple-700"
+                          >
+                            <Tag className="h-2.5 w-2.5 mr-0.5" />
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
+          )}
+
+          {/* 历史会话 */}
+          <div className="p-4">
+            <h3 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+              <History className="h-4 w-4 mr-1" />
+              历史对话
+            </h3>
+            <div className="space-y-1">
+              {sessions.map((session) => (
+                <button
+                  key={session.id}
+                  onClick={() => selectSession(session.id)}
+                  className={`w-full text-left p-2 rounded-lg hover:bg-gray-100 transition-colors ${
+                    currentSession === session.id ? 'bg-purple-50 text-purple-700' : 'text-gray-700'
+                  }`}
+                >
+                  <p className="text-sm font-medium truncate">{session.title}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {new Date(session.updated_at).toLocaleDateString('zh-CN')}
+                  </p>
+                </button>
+              ))}
+              {sessions.length === 0 && (
+                <p className="text-sm text-gray-500 text-center py-4">
+                  暂无历史对话
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Chat Area */}
+      {/* 主聊天区域 */}
       <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-t-xl p-6 text-white">
-          <div className="flex items-center space-x-3">
-            <div className="h-12 w-12 bg-white/20 rounded-xl flex items-center justify-center">
-              <Brain className="h-7 w-7" />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold">AI学习伴侣</h1>
-              <p className="text-purple-100">你的专属学习助手，24/7在线</p>
+        {/* 聊天头部 */}
+        <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setShowSidebar(true)}
+                className="lg:hidden p-2 text-white/80 hover:text-white rounded-lg"
+              >
+                <MessageSquare className="h-5 w-5" />
+              </button>
+              <div className="h-12 w-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <Brain className="h-7 w-7" />
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold">AI学习伴侣</h1>
+                <p className="text-purple-100">你的专属学习助手，支持知识库检索</p>
+              </div>
             </div>
           </div>
           
-          {/* Status Indicator */}
           <div className="mt-4 flex items-center space-x-2">
             <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-sm text-purple-100">在线 · 已为你学习66天</span>
+            <span className="text-sm text-purple-100">在线 · 已连接知识库</span>
           </div>
         </div>
 
-        {/* Chat Messages */}
-        <div className="flex-1 bg-white border-x overflow-y-auto p-6 space-y-4">
-        {messages.map((message) => (
-          <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${
-              message.type === 'user'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-900'
-            }`}>
-              {message.type === 'ai' && (
-                <div className="flex items-center space-x-2 mb-2">
-                  <Sparkles className="h-4 w-4 text-purple-600" />
-                  <span className="text-xs text-purple-600 font-medium">AI助手</span>
-                </div>
-              )}
-              <p className="whitespace-pre-wrap">{message.content}</p>
-              <div className={`text-xs mt-2 ${
-                message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
-              }`}>
-                {formatTimestamp(message.timestamp)}
+        {/* 消息列表 */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white">
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+                <Brain className="h-8 w-8 text-purple-600" />
               </div>
-              
-              {message.suggestions && (
-                <div className="mt-3 space-y-1">
-                  {message.suggestions.map((suggestion, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleSendMessage(suggestion)}
-                      className="block w-full text-left px-3 py-1 text-sm bg-white border border-gray-200 rounded text-gray-700 hover:bg-blue-50 hover:border-blue-200 transition-colors"
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-        
-        {isTyping && (
-          <div className="flex justify-start">
-            <div className="max-w-xs lg:max-w-md px-4 py-3 rounded-lg bg-gray-100">
-              <div className="flex items-center space-x-2">
-                <Sparkles className="h-4 w-4 text-purple-600" />
-                <span className="text-xs text-purple-600 font-medium">AI助手正在思考...</span>
-              </div>
-              <div className="flex space-x-1 mt-2">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">欢迎使用AI学习伴侣</h3>
+              <p className="text-gray-600 mb-4 max-w-md">
+                我可以帮助您制定学习计划、回答学习问题、推荐学习资源，还能从知识库中为您找到相关资料。
+              </p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {quickActions.map((action, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleQuickAction(action.action)}
+                    className="px-3 py-1.5 bg-gray-100 hover:bg-purple-100 text-gray-700 hover:text-purple-700 rounded-full text-sm transition-colors"
+                  >
+                    {action.title}
+                  </button>
+                ))}
               </div>
             </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
+          ) : (
+            <>
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-4 py-2 ${
+                      message.type === 'user'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-100 border border-gray-200'
+                    }`}
+                  >
+                    {message.type === 'ai' && (
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Sparkles className="h-4 w-4 text-purple-600" />
+                        <span className="text-xs text-purple-600 font-medium">AI助手</span>
+                      </div>
+                    )}
+                    <div className="whitespace-pre-wrap text-sm">{message.content}</div>
+                    
+                    {message.type === 'ai' && (
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                        <div className="flex items-center space-x-3 text-xs text-gray-500">
+                          {message.processing_time && (
+                            <div className="flex items-center space-x-1">
+                              <Clock className="h-3 w-3" />
+                              <span>{(message.processing_time / 1000).toFixed(1)}s</span>
+                            </div>
+                          )}
+                          {message.confidence_score && (
+                            <div className="flex items-center space-x-1">
+                              <Sparkles className="h-3 w-3" />
+                              <span>{Math.round(message.confidence_score * 100)}%</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {message.suggestions && (
+                      <div className="mt-3 space-y-1">
+                        {message.suggestions.map((suggestion, index) => (
+                          <button
+                            key={index}
+                            onClick={() => handleSendMessage(suggestion)}
+                            className="block w-full text-left px-3 py-1 text-sm bg-white border border-gray-200 rounded text-gray-700 hover:bg-purple-50 hover:border-purple-200 transition-colors"
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {isTyping && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-100 border border-gray-200 rounded-2xl px-4 py-2">
+                    <div className="flex items-center space-x-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
+                      <span className="text-sm text-gray-600">AI正在思考...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
 
-      {/* Quick Actions */}
-      <div className="bg-gray-50 border-x border-b p-4">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
-          {quickActions.map((action, index) => (
-            <div
-              key={index}
-              onClick={() => handleQuickAction(action.action)}
-              className="p-3 bg-white border border-gray-200 rounded-lg text-left cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition-colors"
+        {/* 快速操作 */}
+        <div className="bg-gray-50 border-t p-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
+            {quickActions.map((action, index) => (
+              <div
+                key={index}
+                onClick={() => handleQuickAction(action.action)}
+                className="p-3 bg-white border border-gray-200 rounded-lg text-left cursor-pointer hover:bg-purple-50 hover:border-purple-200 transition-colors"
+              >
+                <div className="flex items-center space-x-2 mb-1">
+                  <div className="text-purple-500">
+                    {action.icon}
+                  </div>
+                  <span className="font-medium text-sm text-gray-700">{action.title}</span>
+                </div>
+                <p className="text-xs text-gray-500">{action.description}</p>
+              </div>
+            ))}
+          </div>
+          
+          {/* 输入区域 */}
+          <div className="flex space-x-2">
+            <div className="flex-1 relative">
+              <textarea
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="向AI助手提问..."
+                rows={1}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                style={{ minHeight: '48px' }}
+                disabled={isTyping}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    handleSendMessage(inputValue)
+                  }
+                }}
+              />
+            </div>
+            <button
+              onClick={() => handleSendMessage(inputValue)}
+              disabled={!inputValue.trim() || isTyping}
+              className="px-4 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-xl transition-colors flex items-center justify-center"
             >
-              <div className="flex items-center space-x-2 mb-1">
-                <div className="text-blue-500">
-                  {action.icon}
-                </div>
-                <span className="font-medium text-sm text-gray-700">{action.title}</span>
-              </div>
-              <p className="text-xs text-gray-500">{action.description}</p>
-            </div>
-          ))}
-        </div>
-        
-        {/* Input Area */}
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="向AI助手提问..."
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                handleSendMessage(inputValue)
-              }
-            }}
-          />
-          <button
-            onClick={() => handleSendMessage(inputValue)}
-            disabled={!inputValue.trim()}
-            className={`px-6 py-3 rounded-lg flex items-center space-x-2 ${!inputValue.trim() ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'} text-white`}
-          >
-            <Send className="h-4 w-4" />
-            <span>发送</span>
-          </button>
-        </div>
+              {isTyping ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Send className="h-5 w-5" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* 侧边栏遮罩 */}
+      {showSidebar && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+          onClick={() => setShowSidebar(false)}
+        />
+      )}
     </div>
   )
 }

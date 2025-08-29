@@ -16,6 +16,8 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+  const [showResendButton, setShowResendButton] = useState(false)
+  const [isResending, setIsResending] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const { signIn } = useAuth()
@@ -53,9 +55,49 @@ export default function LoginPage() {
       
       router.push(dashboardRoutes[userType])
     } catch (error: any) {
-      setError(error.message || '登录失败，请检查邮箱和密码')
+      const errorMessage = error.message || '登录失败，请检查邮箱和密码'
+      
+      // 检查是否是邮箱未验证错误
+      if (errorMessage.includes('Email not confirmed') || errorMessage.includes('邮箱未确认')) {
+        setError(`请先验证您的邮箱地址。我们已向 ${formData.email} 发送了验证邮件，请检查您的收件箱（包括垃圾邮件文件夹）并点击验证链接。`)
+        setShowResendButton(true)
+      } else {
+        setError(errorMessage)
+        setShowResendButton(false)
+      }
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleResendVerification = async () => {
+    if (!formData.email) {
+      setError('请先输入邮箱地址')
+      return
+    }
+    
+    setIsResending(true)
+    try {
+      // 使用管理API重新发送验证邮件
+      const response = await fetch('/api/admin/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email })
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        setSuccessMessage(`验证邮件已重新发送至 ${formData.email}，请检查您的收件箱。`)
+        setError('')
+        setShowResendButton(false)
+      } else {
+        setError(result.error || '重新发送失败，请稍后重试')
+      }
+    } catch (error) {
+      setError('重新发送验证邮件失败，请稍后重试')
+    } finally {
+      setIsResending(false)
     }
   }
 
@@ -91,6 +133,18 @@ export default function LoginPage() {
             {error && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
                 <p className="text-red-200 text-sm">{error}</p>
+                {showResendButton && (
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={handleResendVerification}
+                      disabled={isResending}
+                      className="text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 px-4 py-2 rounded text-white transition-colors"
+                    >
+                      {isResending ? '发送中...' : '重新发送验证邮件'}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
             {/* User Type Selection */}

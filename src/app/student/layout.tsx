@@ -28,8 +28,7 @@ export default function StudentLayout({
   const navigation = [
     { name: '概览', href: '/student', icon: BarChart3 },
     { name: 'OKR管理', href: '/student/okr', icon: Target },
-    { name: '知识问答', href: '/student/knowledge', icon: Brain },
-    { name: 'AI学习伴侣', href: '/student/ai-companion', icon: MessageCircle },
+    { name: 'AI学习伴侣', href: '/student/ai-companion', icon: Brain },
     { name: '学习资源', href: '/student/resources', icon: BookOpen },
     { name: '设置', href: '/student/settings', icon: Settings },
   ]

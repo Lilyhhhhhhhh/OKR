@@ -152,25 +152,8 @@ export default function OKRManagement() {
     }
   }
 
-  // 示例数据（如果没有数据时显示）
-  const [sampleOKRs] = useState<Objective[]>([
-    {
-      id: 'sample1',
-      title: '提升前端开发技能',
-      description: '通过项目实践和系统学习，全面提升前端开发能力，为找到理想的前端工作做好准备',
-      category: '技能提升',
-      priority: 'high',
-      status: 'active',
-      target_date: '2024-06-30',
-      progress: 0,
-      key_results: [],
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z'
-    }
-  ])
-
   // 获取要显示的OKR数据
-  const displayObjectives = objectives.length > 0 ? objectives : (loading ? [] : sampleOKRs)
+  const displayObjectives = objectives
 
   const getStatusColor = (status: string) => {
     switch (status) {

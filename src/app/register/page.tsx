@@ -60,8 +60,8 @@ export default function RegisterPage() {
       }
 
       await signUp(formData.email, formData.password, profileData)
-      // 注册成功后跳转到登录页面
-      router.push('/login?message=注册成功，请登录')
+      // 注册成功后跳转到登录页面，并显示验证邮箱提示
+      router.push(`/login?message=注册成功！我们已向 ${formData.email} 发送了验证邮件，请检查您的收件箱并点击验证链接后再登录。`)
     } catch (error: any) {
       setError(error.message || '注册失败，请重试')
     } finally {

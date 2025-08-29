@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, validateAuth } from '@/lib/supabase-server'
 
-type Params = Promise<{ id: string }>
-
 // 删除指定目标
-export async function DELETE(
-  request: NextRequest,
-  props: { params: Params }
-) {
+export async function DELETE(request: NextRequest, props: any) {
   try {
     const params = await props.params
     const { id: objectiveId } = params
@@ -18,6 +13,7 @@ export async function DELETE(
     }
 
     const supabase = createServerClient(request)
+    
     // 验证目标是否属于当前用户
     const { data: objective, error: fetchError } = await supabase
       .from('objectives')
@@ -50,10 +46,7 @@ export async function DELETE(
 }
 
 // 获取单个目标详情
-export async function GET(
-  request: NextRequest,
-  props: { params: Params }
-) {
+export async function GET(request: NextRequest, props: any) {
   try {
     const params = await props.params
     const { id: objectiveId } = params
@@ -64,6 +57,7 @@ export async function GET(
     }
 
     const supabase = createServerClient(request)
+    
     const { data: objective, error } = await supabase
       .from('objectives')
       .select(`

@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, validateAuth } from '@/lib/supabase-server'
 
-type Params = Promise<{ id: string }>
-
-export async function PUT(
-  request: NextRequest,
-  props: { params: Params }
-) {
+export async function PUT(request: NextRequest, props: any) {
   try {
     const params = await props.params
     const { id: keyResultId } = params
@@ -20,6 +15,7 @@ export async function PUT(
     const { current_value, note } = body
 
     const supabase = createServerClient(request)
+    
     // 获取当前关键结果信息
     const { data: keyResult, error: keyResultError } = await supabase
       .from('key_results')
@@ -41,7 +37,7 @@ export async function PUT(
       .from('key_results')
       .update({
         current_value,
-        progress: Math.min(progressPercentage, 100), // 确保进度不超过100%
+        progress: Math.min(progressPercentage, 100),
         updated_at: new Date().toISOString()
       })
       .eq('id', keyResultId)
@@ -89,10 +85,7 @@ export async function PUT(
   }
 }
 
-export async function GET(
-  request: NextRequest,
-  props: { params: Params }
-) {
+export async function GET(request: NextRequest, props: any) {
   try {
     const params = await props.params
     const { id: keyResultId } = params
@@ -103,6 +96,7 @@ export async function GET(
     }
 
     const supabase = createServerClient(request)
+    
     // 获取关键结果进度历史
     const { data: progressHistory, error } = await supabase
       .from('progress_logs')
@@ -144,7 +138,7 @@ async function updateObjectiveProgress(objectiveId: string, supabase: any) {
     }
 
     // 计算平均进度
-    const totalProgress = keyResults.reduce((sum, kr) => sum + (kr.progress || 0), 0)
+    const totalProgress = keyResults.reduce((sum: number, kr: any) => sum + (kr.progress || 0), 0)
     const averageProgress = keyResults.length > 0 ? totalProgress / keyResults.length : 0
 
     // 更新目标的进度
