@@ -8,7 +8,7 @@ const supabase = createClient(
 )
 
 // 删除指定目标
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ [key: string]: string }> }) {
   try {
     // 从params中获取ID参数
     const { id: objectiveId } = await params
@@ -57,7 +57,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 }
 
 // 获取单个目标详情
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ [key: string]: string }> }) {
   try {
     // 从params中获取ID参数
     const { id: objectiveId } = await params
