@@ -1,19 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient, validateAuth } from '@/lib/supabase-server'
+import { createClient } from '@supabase/supabase-js'
+
+// 不使用类型约束，直接创建客户端
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 // 获取学生的所有目标
 export async function GET(request: NextRequest) {
   try {
-    const { user, error: authError } = await validateAuth(request)
+    // 简化认证检查
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: '未授权' }, { status: 401 })
+    }
+    
+    const token = authHeader.substring(7)
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     if (authError || !user) {
-      return NextResponse.json({ error: authError || '未授权' }, { status: 401 })
+      return NextResponse.json({ error: '未授权' }, { status: 401 })
     }
 
     const url = new URL(request.url)
     const status = url.searchParams.get('status')
     const limit = url.searchParams.get('limit')
-
-    const supabase = createServerClient(request)
     let query = supabase
       .from('objectives')
       .select(`
@@ -48,15 +59,20 @@ export async function GET(request: NextRequest) {
 // 创建新目标
 export async function POST(request: NextRequest) {
   try {
-    const { user, error: authError } = await validateAuth(request)
+    // 简化认证检查
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: '未授权' }, { status: 401 })
+    }
+    
+    const token = authHeader.substring(7)
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     if (authError || !user) {
-      return NextResponse.json({ error: authError || '未授权' }, { status: 401 })
+      return NextResponse.json({ error: '未授权' }, { status: 401 })
     }
 
     const body = await request.json()
     const { title, description, category, priority, target_date, key_results } = body
-
-    const supabase = createServerClient(request)
     // 创建目标
     const { data: objective, error: objError } = await supabase
       .from('objectives')

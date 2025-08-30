@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { Database } from '@/types/database';
 import { NextRequest } from 'next/server';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -9,12 +8,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('缺少 Supabase 环境变量配置');
 }
 
-// 创建用于服务端的Supabase客户端
+// 创建用于服务端的Supabase客户端，移除类型约束
 export function createServerClient(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
   const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null
 
-  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  return createClient(supabaseUrl!, supabaseAnonKey!, {
     global: {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     },

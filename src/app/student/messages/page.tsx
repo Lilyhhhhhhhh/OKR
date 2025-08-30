@@ -143,7 +143,7 @@ export default function MessagesPage() {
             onClick={markAllAsRead}
             className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            <MarkAsRead className="h-4 w-4" />
+            <CheckCircle className="h-4 w-4" />
             <span>全部标记为已读</span>
           </button>
         )}
@@ -245,7 +245,7 @@ export default function MessagesPage() {
                       className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
                       title="标记为已读"
                     >
-                      <MarkAsRead className="h-4 w-4" />
+                      <CheckCircle className="h-4 w-4" />
                     </button>
                   )}
                   <button

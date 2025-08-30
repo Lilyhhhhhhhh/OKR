@@ -444,7 +444,7 @@ export default function CourseOKRPage() {
                     const newOKR = {
                       id: Date.now().toString(),
                       courseId: 'CS' + Math.floor(Math.random() * 1000).toString().padStart(3, '0'),
-                      courseName: document.querySelector('input[placeholder="例如：Web前端开发基础"]')?.value || '新课程',
+                      courseName: (document.querySelector('input[placeholder="例如：Web前端开发基础"]') as HTMLInputElement)?.value || '新课程',
                       objective: (document.querySelector('textarea[placeholder="描述本课程的主要学习目标..."]') as HTMLTextAreaElement)?.value || '课程目标',
                       description: '新创建的课程OKR',
                       semester: (document.querySelector('select') as HTMLSelectElement)?.value || '2024春季学期',

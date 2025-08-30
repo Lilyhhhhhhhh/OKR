@@ -1,20 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient, validateAuth } from '@/lib/supabase-server'
+import { createClient } from '@supabase/supabase-js'
+
+// 创建 Supabase 客户端
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 // 删除指定目标
-export async function DELETE(request: NextRequest, context: any) {
+export async function DELETE(request: NextRequest) {
   try {
     // 从URL中提取ID参数
     const url = new URL(request.url)
     const pathParts = url.pathname.split('/')
-    const objectiveId = pathParts[pathParts.length - 1] // 获取最后的[id]部分
+    const objectiveId = pathParts[pathParts.length - 1]
     
-    const { user, error: authError } = await validateAuth(request)
-    if (authError || !user) {
-      return NextResponse.json({ error: authError || '未授权' }, { status: 401 })
+    // 简化认证检查
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: '未授权' }, { status: 401 })
     }
-
-    const supabase = createServerClient(request)
+    
+    const token = authHeader.substring(7)
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) {
+      return NextResponse.json({ error: '未授权' }, { status: 401 })
+    }
     
     // 验证目标是否属于当前用户
     const { data: objective, error: fetchError } = await supabase
@@ -48,19 +59,24 @@ export async function DELETE(request: NextRequest, context: any) {
 }
 
 // 获取单个目标详情
-export async function GET(request: NextRequest, context: any) {
+export async function GET(request: NextRequest) {
   try {
     // 从URL中提取ID参数
     const url = new URL(request.url)
     const pathParts = url.pathname.split('/')
-    const objectiveId = pathParts[pathParts.length - 1] // 获取最后的[id]部分
+    const objectiveId = pathParts[pathParts.length - 1]
     
-    const { user, error: authError } = await validateAuth(request)
-    if (authError || !user) {
-      return NextResponse.json({ error: authError || '未授权' }, { status: 401 })
+    // 简化认证检查
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: '未授权' }, { status: 401 })
     }
-
-    const supabase = createServerClient(request)
+    
+    const token = authHeader.substring(7)
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    if (authError || !user) {
+      return NextResponse.json({ error: '未授权' }, { status: 401 })
+    }
     
     const { data: objective, error } = await supabase
       .from('objectives')

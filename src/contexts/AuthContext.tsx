@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
 import { apiService } from '@/lib/api'
 import { Student } from '@/types/database'
@@ -9,7 +10,8 @@ interface AuthContextType {
   user: User | null
   student: Student | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<void>
+  setStudent: (student: Student | null) => void
+  signIn: (email: string, password: string) => Promise<{ user: User | null; student: Student | null }>
   signUp: (email: string, password: string, profileData: any) => Promise<void>
   signOut: () => Promise<void>
   updateProfile: (profileData: any) => Promise<void>
@@ -22,6 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [student, setStudent] = useState<Student | null>(null)
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     // 初始化时获取当前用户
@@ -138,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setStudent(null)
       
       // 跳转到登录页面
-      window.location.href = '/login'
+      router.push('/login')
     } catch (error) {
       console.error('退出登录失败:', error)
       throw error
@@ -167,6 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     student,
     loading,
+    setStudent,
     signIn,
     signUp,
     signOut,

@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { apiService } from '@/lib/api'
 import { 
   Send, 
   Brain, 
@@ -19,7 +18,9 @@ import {
   History,
   Clock,
   Tag,
-  Loader2
+  Loader2,
+  Bot,
+  Wrench
 } from 'lucide-react'
 
 interface Message {
@@ -40,38 +41,13 @@ interface QuickAction {
   action: string
 }
 
-interface ChatHistory {
-  id: string
-  title: string
-  preview: string
-  timestamp: Date
-  messages: Message[]
-}
-
-interface KnowledgeItem {
-  id: string
-  title: string
-  content: string
-  tags: string[]
-  category: string
-  author: string
-  created_at: string
-}
-
-interface Session {
-  id: string
-  title: string
-  created_at: string
-  updated_at: string
-}
-
 export default function AICompanion() {
   const { user } = useAuth()
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       type: 'ai',
-      content: '你好！我是你的AI学习伴侣。我可以帮助你制定学习计划、回答学习问题、推荐学习资源，还能从知识库中为你找到相关资料。有什么可以帮助你的吗？',
+      content: '你好！我是你的AI学习伴侣。虽然AI功能正在开发中，但你可以在这里预览界面和交互体验。等待工作流接入后，我将能够帮助你制定学习计划、回答学习问题、推荐学习资源！',
       timestamp: new Date(),
       suggestions: ['制定学习计划', '搜索知识库', '分析学习进度', '推荐学习资源']
     }
@@ -81,9 +57,6 @@ export default function AICompanion() {
   const [isTyping, setIsTyping] = useState(false)
   const [showSidebar, setShowSidebar] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [knowledgeItems, setKnowledgeItems] = useState<KnowledgeItem[]>([])
-  const [sessions, setSessions] = useState<Session[]>([])
-  const [currentSession, setCurrentSession] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // 安全的时间格式化函数
@@ -146,39 +119,7 @@ export default function AICompanion() {
     scrollToBottom()
   }, [messages])
 
-  // 搜索知识库
-  const searchKnowledge = async (query: string) => {
-    if (!query.trim()) {
-      setKnowledgeItems([])
-      return
-    }
-    
-    try {
-      const result = await apiService.searchKnowledge({ 
-        query, 
-        limit: 10 
-      })
-      if (result.success) {
-        setKnowledgeItems(result.data || [])
-      }
-    } catch (error) {
-      console.error('搜索知识库失败:', error)
-    }
-  }
-
-  // 加载会话列表
-  const loadSessions = async () => {
-    try {
-      const result = await apiService.getKnowledgeChatHistory()
-      if (result.success) {
-        setSessions(result.sessions || [])
-      }
-    } catch (error) {
-      console.error('加载会话列表失败:', error)
-    }
-  }
-
-  // 发送消息（集成知识库功能）
+  // 模拟发送消息（不调用真实API）
   const handleSendMessage = async (content: string) => {
     if (!content.trim() || isTyping) return
     
@@ -193,114 +134,24 @@ export default function AICompanion() {
     setInputValue('')
     setIsTyping(true)
 
-    try {
-      // 使用知识库API发送消息
-      const result = await apiService.sendKnowledgeQuestion(content, currentSession)
-      
-      if (result.success) {
-        // 更新当前会话ID
-        if (!currentSession) {
-          setCurrentSession(result.session_id)
-        }
-
-        const aiMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          type: 'ai',
-          content: result.answer || '抱歉，我无法回答这个问题。',
-          timestamp: new Date(),
-          confidence_score: result.confidence,
-          processing_time: result.processing_time,
-          related_knowledge_ids: result.related_knowledge_ids || []
-        }
-
-        setMessages(prev => [...prev, aiMessage])
-        
-        // 更新会话列表
-        await loadSessions()
-      } else {
-        // 处理错误情况
-        const errorMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          type: 'ai',
-          content: result.answer || '抱歉，出现了错误，请稍后重试。',
-          timestamp: new Date()
-        }
-        setMessages(prev => [...prev, errorMessage])
-      }
-    } catch (error) {
-      console.error('发送消息失败:', error)
-      const errorMessage: Message = {
+    // 模拟AI思考时间
+    setTimeout(() => {
+      const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: '抱歉，网络错误，请稍后重试。',
-        timestamp: new Date()
-      }
-      setMessages(prev => [...prev, errorMessage])
-    } finally {
-      setIsTyping(false)
-    }
-  }
-
-  // 开始新对话
-  const startNewChat = () => {
-    setCurrentSession(null)
-    setMessages([
-      {
-        id: Date.now().toString(),
-        type: 'ai',
-        content: '你好！我是你的AI学习伴侣。我可以帮助你制定学习计划、回答学习问题、推荐学习资源，还能从知识库中为你找到相关资料。有什么可以帮助你的吗？',
+        content: '感谢你的消息！AI功能正在开发中，暂时无法提供智能回复。等待工作流接入后，我将能够：\n\n• 制定个性化学习计划\n• 回答专业技术问题\n• 推荐优质学习资源\n• 分析学习进度和效果\n\n敬请期待！',
         timestamp: new Date(),
-        suggestions: ['制定学习计划', '搜索知识库', '分析学习进度', '推荐学习资源']
+        suggestions: ['了解更多功能', '查看学习计划', '浏览知识库']
       }
-    ])
-  }
 
-  // 选择会话
-  const selectSession = async (sessionId: string) => {
-    try {
-      const result = await apiService.getKnowledgeChatHistory(sessionId)
-      if (result.success && result.messages) {
-        const convertedMessages: Message[] = result.messages.map((msg: any) => ({
-          id: msg.id,
-          type: msg.sender_type === 'user' ? 'user' : 'ai',
-          content: msg.content,
-          timestamp: new Date(msg.created_at),
-          confidence_score: msg.confidence_score,
-          processing_time: msg.processing_time,
-          related_knowledge_ids: msg.related_knowledge_ids
-        }))
-        setMessages(convertedMessages)
-        setCurrentSession(sessionId)
-        setShowSidebar(false)
-      }
-    } catch (error) {
-      console.error('加载会话失败:', error)
-    }
+      setMessages(prev => [...prev, aiMessage])
+      setIsTyping(false)
+    }, 2000)
   }
 
   const handleQuickAction = (action: string) => {
     handleSendMessage(action)
   }
-
-  // 初始化
-  useEffect(() => {
-    if (user) {
-      loadSessions()
-    }
-  }, [user])
-
-  // 搜索知识库
-  useEffect(() => {
-    const searchTimeout = setTimeout(() => {
-      if (searchQuery) {
-        searchKnowledge(searchQuery)
-      } else {
-        setKnowledgeItems([])
-      }
-    }, 300)
-
-    return () => clearTimeout(searchTimeout)
-  }, [searchQuery])
 
   if (!user) {
     return (
@@ -325,7 +176,15 @@ export default function AICompanion() {
               AI学习伴侣
             </h2>
             <button
-              onClick={startNewChat}
+              onClick={() => {
+                setMessages([{
+                  id: Date.now().toString(),
+                  type: 'ai',
+                  content: '你好！我是你的AI学习伴侣。虽然AI功能正在开发中，但你可以在这里预览界面和交互体验。等待工作流接入后，我将能够帮助你制定学习计划、回答学习问题、推荐学习资源！',
+                  timestamp: new Date(),
+                  suggestions: ['制定学习计划', '搜索知识库', '分析学习进度', '推荐学习资源']
+                }])
+              }}
               className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
               title="新建对话"
             >
@@ -348,68 +207,28 @@ export default function AICompanion() {
 
         {/* 内容区域 */}
         <div className="flex-1 overflow-y-auto">
-          {/* 知识库搜索结果 */}
-          {knowledgeItems.length > 0 && (
-            <div className="p-4 border-b border-gray-100">
-              <h3 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                <BookOpen className="h-4 w-4 mr-1" />
-                知识库
-              </h3>
-              <div className="space-y-2">
-                {knowledgeItems.slice(0, 5).map((item) => (
-                  <div
-                    key={item.id}
-                    className="p-2 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
-                    onClick={() => setInputValue(`请介绍一下"${item.title}"`)}
-                  >
-                    <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
-                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.content}</p>
-                    {item.tags && item.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {item.tags.slice(0, 3).map((tag, index) => (
-                          <span
-                            key={index}
-                            className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs bg-purple-100 text-purple-700"
-                          >
-                            <Tag className="h-2.5 w-2.5 mr-0.5" />
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
+          {/* 功能开发中提示 */}
+          <div className="p-4 border-b border-gray-100">
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+              <div className="flex items-center mb-2">
+                <Wrench className="h-4 w-4 text-orange-500 mr-2" />
+                <span className="text-sm font-medium text-orange-700">功能开发中</span>
               </div>
+              <p className="text-xs text-orange-600">
+                知识库搜索和历史对话功能正在开发中，敬请期待！
+              </p>
             </div>
-          )}
+          </div>
 
-          {/* 历史会话 */}
+          {/* 历史会话占位 */}
           <div className="p-4">
             <h3 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
               <History className="h-4 w-4 mr-1" />
               历史对话
             </h3>
-            <div className="space-y-1">
-              {sessions.map((session) => (
-                <button
-                  key={session.id}
-                  onClick={() => selectSession(session.id)}
-                  className={`w-full text-left p-2 rounded-lg hover:bg-gray-100 transition-colors ${
-                    currentSession === session.id ? 'bg-purple-50 text-purple-700' : 'text-gray-700'
-                  }`}
-                >
-                  <p className="text-sm font-medium truncate">{session.title}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {new Date(session.updated_at).toLocaleDateString('zh-CN')}
-                  </p>
-                </button>
-              ))}
-              {sessions.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  暂无历史对话
-                </p>
-              )}
-            </div>
+            <p className="text-sm text-gray-500 text-center py-4">
+              功能开发中...
+            </p>
           </div>
         </div>
       </div>
@@ -431,14 +250,14 @@ export default function AICompanion() {
               </div>
               <div>
                 <h1 className="text-xl font-semibold">AI学习伴侣</h1>
-                <p className="text-purple-100">你的专属学习助手，支持知识库检索</p>
+                <p className="text-purple-100">你的专属学习助手（开发中）</p>
               </div>
             </div>
           </div>
           
           <div className="mt-4 flex items-center space-x-2">
-            <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-sm text-purple-100">在线 · 已连接知识库</span>
+            <div className="h-2 w-2 bg-orange-400 rounded-full animate-pulse"></div>
+            <span className="text-sm text-purple-100">开发中 · 界面预览模式</span>
           </div>
         </div>
 
@@ -482,7 +301,7 @@ export default function AICompanion() {
                     {message.type === 'ai' && (
                       <div className="flex items-center space-x-2 mb-2">
                         <Sparkles className="h-4 w-4 text-purple-600" />
-                        <span className="text-xs text-purple-600 font-medium">AI助手</span>
+                        <span className="text-xs text-purple-600 font-medium">AI助手 (预览)</span>
                       </div>
                     )}
                     <div className="whitespace-pre-wrap text-sm">{message.content}</div>
@@ -490,18 +309,10 @@ export default function AICompanion() {
                     {message.type === 'ai' && (
                       <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
                         <div className="flex items-center space-x-3 text-xs text-gray-500">
-                          {message.processing_time && (
-                            <div className="flex items-center space-x-1">
-                              <Clock className="h-3 w-3" />
-                              <span>{(message.processing_time / 1000).toFixed(1)}s</span>
-                            </div>
-                          )}
-                          {message.confidence_score && (
-                            <div className="flex items-center space-x-1">
-                              <Sparkles className="h-3 w-3" />
-                              <span>{Math.round(message.confidence_score * 100)}%</span>
-                            </div>
-                          )}
+                          <div className="flex items-center space-x-1">
+                            <Bot className="h-3 w-3" />
+                            <span>演示模式</span>
+                          </div>
                         </div>
                       </div>
                     )}

@@ -545,67 +545,67 @@ export default function OKRManagement() {
                   <h3 className="text-lg font-medium text-gray-900 mb-6">创建新的OKR目标</h3>
                   
                   <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      目标 (Objective)
-                    </label>
-                    <input
-                      name="title"
-                      type="text"
-                      placeholder="例如：提升后端开发技能"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      描述
-                    </label>
-                    <textarea
-                      name="description"
-                      placeholder="详细描述你的目标..."
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 resize-none"
-                      required
-                    ></textarea>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        目标分类
-                      </label>
-                      <select name="category" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                        <option value="学习">学习</option>
-                        <option value="技能">技能</option>
-                        <option value="项目">项目</option>
-                        <option value="考试">考试</option>
-                        <option value="其他">其他</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        截止日期
+                        目标 (Objective)
                       </label>
                       <input
-                        name="target_date"
-                        type="date"
+                        name="title"
+                        type="text"
+                        placeholder="例如：提升后端开发技能"
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                        min={new Date().toISOString().split('T')[0]}
                         required
                       />
                     </div>
-                  </div>
+                  
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        描述
+                      </label>
+                      <textarea
+                        name="description"
+                        placeholder="详细描述你的目标..."
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 resize-none"
+                        required
+                      ></textarea>
+                    </div>
 
-                  {/* 关键结果区域 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      关键结果（KRs）
-                    </label>
-                    
-                    {/* 已添加的关键结果列表 */}
-                    {tempKeyResults.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          目标分类
+                        </label>
+                        <select name="category" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                          <option value="学习">学习</option>
+                          <option value="技能">技能</option>
+                          <option value="项目">项目</option>
+                          <option value="考试">考试</option>
+                          <option value="其他">其他</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          截止日期
+                        </label>
+                        <input
+                          name="target_date"
+                          type="date"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                          min={new Date().toISOString().split('T')[0]}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* 关键结果区域 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        关键结果（KRs）
+                      </label>
+                      
+                      {/* 已添加的关键结果列表 */}
+                      {tempKeyResults.length > 0 && (
                       <div className="mb-4 space-y-2">
                         {tempKeyResults.map((kr, index) => (
                           <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
@@ -628,57 +628,58 @@ export default function OKRManagement() {
                             </button>
                           </div>
                         ))}
-                      </div>
-                    )}
-                    
-                    {/* 添加关键结果输入框 */}
-                    <div className="space-y-3">
-                      <div className="flex space-x-2">
-                        <input
-                          type="text"
-                          value={newKeyResult}
-                          onChange={(e) => setNewKeyResult(e.target.value)}
-                          placeholder="输入关键结果..."
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <select 
-                            value={newKeyResultUnit} 
-                            onChange={(e) => setNewKeyResultUnit(e.target.value as 'percentage' | 'number' | 'boolean')}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
-                          >
-                            <option value="percentage">百分比 (%)</option>
-                            <option value="number">数量 (个)</option>
-                            <option value="boolean">是/否</option>
-                          </select>
                         </div>
-                        <div>
+                      )}
+                      
+                      {/* 添加关键结果输入框 */}
+                      <div className="space-y-3">
+                        <div className="flex space-x-2">
                           <input
-                            type="number"
-                            value={newKeyResultTarget}
-                            onChange={(e) => setNewKeyResultTarget(Number(e.target.value))}
-                            placeholder="目标值"
-                            min="1"
-                            max={newKeyResultUnit === 'percentage' ? '100' : undefined}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            type="text"
+                            value={newKeyResult}
+                            onChange={(e) => setNewKeyResult(e.target.value)}
+                            placeholder="输入关键结果..."
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                           />
                         </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <select 
+                              value={newKeyResultUnit} 
+                              onChange={(e) => setNewKeyResultUnit(e.target.value as 'percentage' | 'number' | 'boolean')}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            >
+                              <option value="percentage">百分比 (%)</option>
+                              <option value="number">数量 (个)</option>
+                              <option value="boolean">是/否</option>
+                            </select>
+                          </div>
+                          <div>
+                            <input
+                              type="number"
+                              value={newKeyResultTarget}
+                              onChange={(e) => setNewKeyResultTarget(Number(e.target.value))}
+                              placeholder="目标值"
+                              min="1"
+                              max={newKeyResultUnit === 'percentage' ? '100' : undefined}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            />
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={addKeyResult}
+                          disabled={!newKeyResult.trim()}
+                          className="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                        >
+                          添加关键结果
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={addKeyResult}
-                        disabled={!newKeyResult.trim()}
-                        className="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                      >
-                        添加关键结果
-                      </button>
-                    </div>
-                    {tempKeyResults.length === 0 && (
-                      <p className="mt-2 text-xs text-gray-500">请至少添加一个关键结果</p>
-                    )}
+                      {tempKeyResults.length === 0 && (
+                        <p className="mt-2 text-xs text-gray-500">请至少添加一个关键结果</p>
+                      )}
                   </div>
+                </div>
                 </div>
                 
                 <div className="bg-gray-50 px-6 py-4 flex flex-col-reverse sm:flex-row sm:justify-end space-y-2 space-y-reverse sm:space-y-0 sm:space-x-3">

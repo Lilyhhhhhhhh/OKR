@@ -8,10 +8,8 @@ import {
   Target, 
   Calendar,
   TrendingUp,
-  AlertCircle,
   CheckCircle2,
   Edit3,
-  Eye,
   MoreHorizontal,
   Brain,
   Trash2
@@ -44,11 +42,9 @@ interface Objective {
 }
 
 export default function OKRManagement() {
-  const { user, student } = useAuth()
+  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<'current' | 'completed' | 'all'>('current')
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [editingOKR, setEditingOKR] = useState<Objective | null>(null)
   const [showProgressModal, setShowProgressModal] = useState(false)
   const [updatingKR, setUpdatingKR] = useState<{objId: string, krId: string} | null>(null)
   const [objectives, setObjectives] = useState<Objective[]>([])
@@ -223,10 +219,10 @@ export default function OKRManagement() {
     }
   }
 
-  // 编辑OKR
+  // 编辑OKR (暂未实现)
   const editObjective = (obj: Objective) => {
-    setEditingOKR(obj)
-    setShowEditModal(true)
+    // TODO: 实现编辑功能
+    console.log('编辑目标:', obj.title)
   }
 
   // 开始更新关键结果进度

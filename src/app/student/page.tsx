@@ -64,12 +64,12 @@ export default function StudentDashboard() {
       
       // 计算统计数据
       const totalObjectives = data.length
-      const activeObjectives = data.filter(obj => obj.status === 'active').length
-      const completedTasks = data.reduce((sum, obj) => 
-        sum + obj.key_results.filter(kr => kr.progress >= 100).length, 0
+      const activeObjectives = data.filter((obj: Objective) => obj.status === 'active').length
+      const completedTasks = data.reduce((sum: number, obj: Objective) => 
+        sum + obj.key_results.filter((kr: KeyResult) => kr.progress >= 100).length, 0
       )
       const averageProgress = totalObjectives > 0 
-        ? Math.round(data.reduce((sum, obj) => sum + obj.progress, 0) / totalObjectives)
+        ? Math.round(data.reduce((sum: number, obj: Objective) => sum + obj.progress, 0) / totalObjectives)
         : 0
       
       setStats({
@@ -119,7 +119,7 @@ export default function StudentDashboard() {
   }
 
   // 获取当前活跃的OKR
-  const activeObjectives = objectives.filter(obj => obj.status === 'active')
+  const activeObjectives = objectives.filter((obj: Objective) => obj.status === 'active')
 
   if (loading) {
     return (

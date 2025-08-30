@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { Star, User, Lock, GraduationCap, Mail, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 
-export default function LoginPage() {
+function LoginForm() {
   const [userType, setUserType] = useState<'student' | 'teacher' | 'admin'>('student')
   const [formData, setFormData] = useState({
     email: '',
@@ -23,7 +23,7 @@ export default function LoginPage() {
   const { signIn } = useAuth()
 
   useEffect(() => {
-    const message = searchParams.get('message')
+    const message = searchParams?.get('message')
     if (message) {
       setSuccessMessage(message)
       // 5秒后清除成功消息
@@ -256,5 +256,15 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-white"></div>
+    </div>}>
+      <LoginForm />
+    </Suspense>
   )
 }

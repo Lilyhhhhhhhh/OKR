@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { Star, User, GraduationCap, Phone, BookOpen, Users } from 'lucide-react'
@@ -29,12 +29,27 @@ export default function CompleteProfilePage() {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
   const { user, setStudent } = useAuth()
 
-  if (!user) {
-    router.push('/login')
-    return null
+  // 确保组件在客户端挂载后才执行认证检查
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (mounted && !user) {
+      router.push('/login')
+    }
+  }, [mounted, user, router])
+
+  if (!mounted || !user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+      </div>
+    )
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -31,8 +31,7 @@ export default function SettingsPage() {
     studentId: '',
     major: '',
     grade: '',
-    phone: '',
-    bio: ''
+    phone: ''
   })
 
   const [securitySettings, setSecuritySettings] = useState({
@@ -68,8 +67,7 @@ export default function SettingsPage() {
           studentId: student.student_id || '',
           major: student.major || '',
           grade: student.grade || '',
-          phone: student.phone || '',
-          bio: student.bio || ''
+          phone: student.phone || ''
         })
         setLoading(false)
       }
@@ -89,8 +87,7 @@ export default function SettingsPage() {
         student_id: profileData.studentId,
         major: profileData.major,
         grade: profileData.grade,
-        phone: profileData.phone,
-        bio: profileData.bio
+        phone: profileData.phone
       }
       
       await apiService.updateStudentProfile(updateData)
@@ -316,16 +313,6 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">个人简介</label>
-                  <textarea
-                    value={profileData.bio}
-                    onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
-                    disabled={!isEditing}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50"
-                  />
-                </div>
 
                 {isEditing && (
                   <div className="flex justify-end space-x-3">
