@@ -8,10 +8,10 @@ const supabase = createClient(
 )
 
 // 删除指定目标
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ [key: string]: string }> }) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ id: string }> }) {
   try {
     // 从params中获取ID参数
-    const { id: objectiveId } = await params
+    const { id: objectiveId } = await props.params
     
     // 简化认证检查
     const authHeader = request.headers.get('authorization')
@@ -57,10 +57,10 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 }
 
 // 获取单个目标详情
-export async function GET(request: NextRequest, { params }: { params: Promise<{ [key: string]: string }> }) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
   try {
     // 从params中获取ID参数
-    const { id: objectiveId } = await params
+    const { id: objectiveId } = await props.params
     
     // 简化认证检查
     const authHeader = request.headers.get('authorization')
