@@ -7,12 +7,10 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-export async function PUT(request: NextRequest, context: any) {
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    // 从URL中提取ID参数
-    const url = new URL(request.url)
-    const pathParts = url.pathname.split('/')
-    const keyResultId = pathParts[pathParts.length - 2] // 获取[id]部分
+    // 从params中获取ID参数
+    const keyResultId = params.id
     
     // 简化认证检查（在服务端API中）
     const authHeader = request.headers.get('authorization')
@@ -93,12 +91,10 @@ export async function PUT(request: NextRequest, context: any) {
   }
 }
 
-export async function GET(request: NextRequest, context: any) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    // 从URL中提取ID参数
-    const url = new URL(request.url)
-    const pathParts = url.pathname.split('/')
-    const keyResultId = pathParts[pathParts.length - 2] // 获取[id]部分
+    // 从params中获取ID参数
+    const keyResultId = params.id
     
     // 简化认证检查（在服务端API中）
     const authHeader = request.headers.get('authorization')

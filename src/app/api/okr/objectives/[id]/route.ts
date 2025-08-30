@@ -8,12 +8,10 @@ const supabase = createClient(
 )
 
 // 删除指定目标
-export async function DELETE(request: NextRequest) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    // 从URL中提取ID参数
-    const url = new URL(request.url)
-    const pathParts = url.pathname.split('/')
-    const objectiveId = pathParts[pathParts.length - 1]
+    // 从params中获取ID参数
+    const objectiveId = params.id
     
     // 简化认证检查
     const authHeader = request.headers.get('authorization')
@@ -59,12 +57,10 @@ export async function DELETE(request: NextRequest) {
 }
 
 // 获取单个目标详情
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    // 从URL中提取ID参数
-    const url = new URL(request.url)
-    const pathParts = url.pathname.split('/')
-    const objectiveId = pathParts[pathParts.length - 1]
+    // 从params中获取ID参数
+    const objectiveId = params.id
     
     // 简化认证检查
     const authHeader = request.headers.get('authorization')
